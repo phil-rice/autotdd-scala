@@ -105,7 +105,7 @@ trait AddConstraints[R] extends EngineTypes[R] {
       throw new ConstraintBecauseException(c.becauseString + " is not true for " + c.params);
     val actual = makeClosureForResult(c.params).apply(c.code)
     if (actual != c.expected)
-      throw new ConstraintResultException("Wrong result for " + c.codeString + " for " + c.params + "\nActual: " + actual + "\nExpected; " + c.expected);
+      throw new ConstraintResultException("Wrong result for " + c.codeString + " for " + c.params + "\nActual: " + actual + "\nExpected: " + c.expected);
   }
 }
 
@@ -114,6 +114,21 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
   def constraints: List[C]
   def makeDefaultRoot(defaultRoot: R): RorN
   def realConstraint(c: C): C = c
+}
+
+trait EngineToString[R] extends EngineTypes[R] {
+  def root: RorN
+  def toString(indent: String, root: RorN): String = {
+    root match {
+      case Left(rfnAndDesc) => indent + rfnAndDesc.desc + "\n"
+      case Right(node) =>
+        indent + "if(" + node.becauseString + ")\n" +
+          toString(indent + " ", node.yes) +
+          indent + "else\n" +
+          toString(indent + " ", node.no)
+    }
+  }
+  override def toString: String = toString("", root)
 }
 
 trait ImmutableEngine[R] extends Engine[R] {
@@ -143,9 +158,7 @@ object Engine1 {
   def constraintImplNoCode[P: c.WeakTypeTag, R: c.WeakTypeTag, CR: c.WeakTypeTag](c: Context)(p: c.Expr[P], expected: c.Expr[R], because: c.Expr[(P) => Boolean]): c.Expr[CR] = {
     import c.universe._
     val expr = reify { (c.Expr[Engine1[P, R]](c.prefix.tree)).splice.constraintImplNoCode(p.splice, expected.splice, because.splice, c.literal(show(because.tree)).splice) }
-    println("expr: " + expr)
     val result = c.Expr[CR](expr.tree)
-    println("result: " + showRaw(result))
     result
   }
   def constraintImplNoBecause[P: c.WeakTypeTag, R: c.WeakTypeTag, CR: c.WeakTypeTag](c: Context)(p: c.Expr[P], expected: c.Expr[R], code: c.Expr[(P) => R]): c.Expr[CR] = {
@@ -160,7 +173,7 @@ object Engine1 {
   }
 }
 
-trait Engine1[P, R] extends Engine[R] with Function1[P, R] {
+trait Engine1[P, R] extends Engine[R] with Function1[P, R] with EngineToString[R] {
   type B = (P) => Boolean
   type RFn = (P) => R
   type C = Constraint1[P, R]
@@ -213,7 +226,7 @@ object Engine2 {
   }
 }
 
-trait Engine2[P1, P2, R] extends Engine[R] with Function2[P1, P2, R] {
+trait Engine2[P1, P2, R] extends Engine[R] with Function2[P1, P2, R] with EngineToString[R] {
   type B = (P1, P2) => Boolean
   type RFn = (P1, P2) => R
   type C = Constraint2[P1, P2, R]
@@ -254,6 +267,7 @@ class ImmutableEngine2[P1, P2, R](val defaultResult: R, val constraints: List[Co
   val root: RorN = buildFromConstraints(makeDefaultRoot(defaultResult), constraints)
   def addConstraint(c: C): CR = this
 }
+
 object MutableEngine {
   def engine1[P, R](default: R = null) = new MutableEngine1[P, R](default)
   def engine2[P1, P2, R](default: R = null) = new MutableEngine2[P1, P2, R](default)
