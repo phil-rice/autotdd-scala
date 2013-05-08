@@ -1,0 +1,92 @@
+package org.autoTdd.helloScala.tests
+
+import org.autoTdd.helloScala.Constraint
+import org.autoTdd.helloScala.Node
+import org.autoTdd.helloScala.Constraint1
+import org.autoTdd.helloScala.Constraint2
+import java.util.concurrent.atomic.AtomicInteger
+import org.autoTdd.helloScala.Node
+
+case class NodeInfo[R, B, T](val yes: Option[NodeInfo[R, B, T]] = None, val no: Option[NodeInfo[R, B, T]] = None, val because: Option[B] = None, val inputs: List[Any] = List(), val then: Option[T] = None)
+
+object IfThenContext {
+  val ifKeyword = "if"
+  val thenKeyword = "then"
+  val elseKeyword = "else"
+  val keywords = Set(ifKeyword, thenKeyword, elseKeyword);
+
+  def apply[R, B, T, C <: Constraint[R]](sentence: String): IfThenContext[R, B, T, C] =
+    new IfThenContext[R, B, T, C](sentence.split("\\s|\\/|,"), None, None, NodeInfo[R, B, T](), 0)
+}
+case class IfThenContext[R, B, T, C <: Constraint[R]](val words: Array[String], val thisNode: Option[Node[R, C]], val lastMatch: Option[Node[R, C]], val nodeInfo: NodeInfo[R, B, T], val index: Int) {
+  type ThisType = IfThenContext[R, B, T, C]
+
+  def peekWord: String = words(index)
+  def eatWord: ThisType = copy(index = index + 1)
+
+  def isPeekWordAKeyword: Boolean = IfThenContext.keywords contains peekWord
+  def isPeek(keyword: String) = peekWord == keyword
+  def assertToken(token: String): ThisType =
+    if (token != peekWord)
+      errorMessage("Expected: " + token + " had " + peekWord)
+    else
+      eatWord
+  def errorMessage(msg: String) = throw new IllegalArgumentException(msg + " at word " + index + " in " + words);
+}
+
+object IfThen {
+  def engine1[P, R] = new IfThen[R, (P) => Boolean, (P) => R, Constraint1[P, R]](Map(), Map(), Map(), None, null)
+  def engine2[P1, P2, R] = new IfThen[R, (P1, P2) => Boolean, (P1, P2) => R, Constraint2[P1, P2, R]](Map(), Map(), Map(), None, null)
+}
+
+class IfThen[R, B, T, C <: Constraint[R]](val becauses: Map[String, B], val thens: Map[String, T], val inputs: Map[String, Any], val root: Option[Node[C, R]], val constraintFactory: (B, R) => C) {
+  type Context = IfThenContext[R, B, T, C]
+
+  def because(symbol: String, because: B) = new IfThen[R, B, T, C](becauses + (symbol -> because), thens, inputs, root, constraintFactory)
+  def then(symbol: String, then: T) = new IfThen[R, B, T, C](becauses, thens + (symbol -> then), inputs, root, constraintFactory)
+  def input(symbol: String, input: Any) = new IfThen[R, B, T, C](becauses, thens, inputs + (symbol -> input), root, constraintFactory)
+
+  private def parse(ifThen: String): Context =
+    parseIf(IfThenContext[R, B, T, C](ifThen))
+
+  private def parseIf(context: Context): Context = {
+    val haveIf = context.assertToken(IfThenContext.ifKeyword)
+    val because = becauses(haveIf.peekWord)
+    val haveInputs = parseAnyInputs(haveIf.eatWord);
+    val havePositive = parsePositive(haveInputs)
+    val haveNegative=parseNegative(havePositive)
+  }
+
+  private def parsePositive(context: Context) = {
+    if (context.isPeek(IfThenContext.ifKeyword)) {
+      parseIf(context)
+    } else
+      parseThen(context)
+  }
+  private def parseNegative(context: Context) = {
+    context.assertToken(IfThenContext.elseKeyword)
+    if (context.isPeek(IfThenContext.ifKeyword))
+      parseIf(context)
+    else
+      thens(context.nextWord)
+
+  }
+
+  private def parseThen(context: Context) = {
+    context.assertToken(IfThenContext.ifKeyword)
+    val result = thens(context.nextWord)
+    result
+  }
+
+  private def parseAnyInputs(context: Context): Context = {
+    var actualInputs = List[Any]();
+    var c = context
+    while (!c.isPeekWordAKeyword) {
+      actualInputs = inputs(context.peekWord) :: actualInputs
+      c = c.eatWord
+    }
+    c.copy(nodeInfo = c.nodeInfo.copy(inputs = actualInputs.reverse))
+  }
+
+}
+
