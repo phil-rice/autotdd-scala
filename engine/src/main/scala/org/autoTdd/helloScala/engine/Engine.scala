@@ -1,8 +1,12 @@
 package org.autoTdd.helloScala.engine
 
 import scala.language.experimental.macros
+
 import scala.reflect.macros.Context
 import scala.reflect.macros.Context
+class ConstraintBecauseException(msg: String) extends RuntimeException(msg)
+class ConstraintResultException(msg: String) extends RuntimeException(msg)
+class EngineResultException(msg: String) extends RuntimeException(msg)
 
 abstract class Constraint[B, RFn, R](val expected: R, val code: RFn, val codeString: String, val because: B, val becauseString: String) {
   def params: List[Any]
@@ -100,13 +104,6 @@ trait EvaluateEngine[R] extends EngineTypes[R] {
 trait AddConstraints[R] extends EngineTypes[R] {
   type CR
   def addConstraint(c: C): CR
-  def validateConstraint(c: C) {
-    if (!makeClosureForBecause(c.params).apply(c.because))
-      throw new ConstraintBecauseException(c.becauseString + " is not true for " + c.params);
-    val actual = makeClosureForResult(c.params).apply(c.code)
-    if (actual != c.expected)
-      throw new ConstraintResultException("Wrong result for " + c.codeString + " for " + c.params + "\nActual: " + actual + "\nExpected: " + c.expected);
-  }
 }
 
 trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngine[R] {
@@ -114,6 +111,27 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
   def constraints: List[C]
   def makeDefaultRoot(defaultRoot: R): RorN
   def realConstraint(c: C): C = c
+
+  def validateConstraint(c: C) {
+    if (!makeClosureForBecause(c.params).apply(c.because))
+      throw new ConstraintBecauseException(c.becauseString + " is not true for " + c.params);
+    val actualFromConstraint = makeClosureForResult(c.params).apply(c.code)
+    if (actualFromConstraint != c.expected)
+      throw new ConstraintResultException("Wrong result for " + c.codeString + " for " + c.params + "\nActual: " + actualFromConstraint + "\nExpected: " + c.expected);
+  }
+
+  def checkConstraint(c: C) {
+    validateConstraint(c);
+    val actualFromEngine = applyParam(c.params);
+    if (actualFromEngine != c.expected)
+      throw new EngineResultException("Wrong result for " + c.codeString + " for " + c.params + "\nActual: " + actualFromEngine + "\nExpected: " + c.expected);
+  }
+
+  def applyParam(params: List[Any]): R = {
+    val rfn = evaluate(makeClosureForBecause(params), root)
+    makeClosureForResult(params)(rfn)
+  }
+
 }
 
 trait EngineToString[R] extends EngineTypes[R] {
@@ -141,7 +159,9 @@ trait ImmutableEngine[R] extends Engine[R] {
   def addConstraint(c: C): CR = {
     validateConstraint(c)
     val newConstraints = (c :: constraints).reverse //could do better..
-    newEngine(defaultResult, newConstraints)
+    val result = newEngine(defaultResult, newConstraints)
+    checkConstraint(c)
+    result
   }
 }
 
@@ -253,7 +273,11 @@ trait Engine2[P1, P2, R] extends Engine[R] with Function2[P1, P2, R] with Engine
   def constraintImplFull[CRDummy <: CR](p1: P1, p2: P2, expected: R, code: RFn, codeString: String, because: B, becauseString: String): CRDummy =
     addConstraint(realConstraint(Constraint2(p1, p2, expected, code, codeString, because, becauseString))).asInstanceOf[CRDummy]
 
-  def makeDefaultRoot(defaultRoot: R): RorN = Left(RFnAndDesc((p1, p2) => defaultRoot, defaultRoot.toString))
+  def makeDefaultRoot(defaultRoot: R): RorN =
+    Left(RFnAndDesc((p1, p2) => defaultRoot, defaultRoot match {
+      case null => "null"
+      case _ => defaultRoot.toString
+    }))
 }
 
 class ImmutableEngine1[P, R](val constraints: List[Constraint1[P, R]]) extends Engine1[P, R] {

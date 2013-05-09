@@ -21,3 +21,4 @@ object Demo6 {
     c.Expr[T](expr.tree)
   }
 }
+

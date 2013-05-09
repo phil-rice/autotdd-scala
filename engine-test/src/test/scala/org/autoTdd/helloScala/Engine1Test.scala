@@ -31,7 +31,7 @@ class Engine1Test extends FlatSpec with ShouldMatchers {
     assert(engine(-100) == "Negative")
   }
 
-  "A constraint without a result" should "return expected" in {
+  "A constraint without a result" should "return expected value when it applies" in {
     val engine = MutableEngine.engine1[Int, String](default = "Negative");
     val actual: String = engine.constraintBecause(1, "Positive", (x) => x >= 0);
     assert(actual == "Positive")
@@ -80,13 +80,14 @@ class Engine1Test extends FlatSpec with ShouldMatchers {
   val bigNeg = Constraint1[Int, String](-10, "BigNeg", code = (x) => "BigNeg", codeString = "BigNeg", because = (x) => x < -5, becauseString = "v-ve");
   val vBigNeg = Constraint1[Int, String](-100, "VBigNeg", code = (x) => "VBigNeg", codeString = "VBigNeg", because = (x) => x < -50, becauseString = "vv-ve");
 
-  "An engine " should "apply four constraints, whatever the order" in {
+  "An engine " should "apply four constraints, whatever the order, in this smoke test" in {
     makeAndCheck(pos, bigPos, neg, bigNeg);
     makeAndCheck(neg, bigNeg, pos, bigPos);
     makeAndCheck(bigPos, pos, bigNeg, neg);
     makeAndCheck(bigNeg, neg, bigPos, pos);
   }
-  it should "apply s constraints, whatever the order" in {
+
+  it should "apply constraints, whatever the order, in this smoke test" in {
     makeAndCheck(pos, bigPos, neg, bigNeg, vBigPos, vBigNeg);
     makeAndCheck(neg, bigNeg, pos, bigPos, vBigPos, vBigNeg);
     makeAndCheck(bigPos, pos, bigNeg, neg, vBigPos, vBigNeg);
@@ -122,19 +123,15 @@ class Engine1Test extends FlatSpec with ShouldMatchers {
     for (c <- constraints)
       engine.addConstraint(c);
     val actual = engine.toString
-    assert(expected == actual, "Expected\n" + expected +"\nActual:\n"+actual)
+    assert(expected == actual, "Expected\n" + expected + "\nActual:\n" + actual)
   }
 
   def makeAndCheck(constraints: Constraint1[Int, String]*) = {
     val engine = MutableEngine.engine1[Int, String](default = "Zero");
     for (c <- constraints)
       engine.addConstraint(c);
-//    for (c <- constraints)
-//      println(c)
-//    println(engine.toString);
     for (c <- constraints) {
       val p = c.param
-      //      println ("checking: " + p + " produces " + engine(p))
       assert(c.expected == engine(p), "\nEngine:\n" + engine + "\nConstraint: " + c);
     }
   }
