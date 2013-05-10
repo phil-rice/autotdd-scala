@@ -21,10 +21,14 @@ object Engine1 {
 
 }
 
-trait Engine1[P, R] extends Engine[R] with Function1[P, R] with EngineToString[R] {
+trait Engine1Types[P, R] extends EngineTypes[R] {
   type B = (P) => Boolean
   type RFn = (P) => R
   type C = Constraint1[P, R]
+
+}
+
+trait Engine1[P, R] extends Engine[R] with Function1[P, R] with EngineToString[R] with Engine1Types[P, R] {
 
   def apply(p: P): R = evaluate(b => b(p), root)(p)
 

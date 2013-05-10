@@ -6,7 +6,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.autoTdd.helloScala.engine.MutableEngine
 import org.autoTdd.helloScala.engine.Constraint1
 
-class Engine1Test extends FlatSpec with ShouldMatchers {
+class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait{
 
   "An empty Engine" should "return the default value" in {
     val engine_1 = Engine1[Int, Int](default = 1);
@@ -72,13 +72,7 @@ class Engine1Test extends FlatSpec with ShouldMatchers {
     assert(engine(-1) == "Negative")
   }
 
-  val pos = Constraint1[Int, String](1, "Pos", code = (x: Int) => "Pos", because = (x: Int) => x > 0);
-  val bigPos = Constraint1[Int, String](10, "BigPos", code = (x: Int) => "BigPos", because = (x: Int) => x > 5);
-  val vBigPos = Constraint1[Int, String](100, "VBigPos", code = (x: Int) => "VBigPos", because = (x: Int) => x > 50);
-
-  val neg = Constraint1[Int, String](-1, "Neg", code = (x: Int) => "Neg", because = (x: Int) => x < 0);
-  val bigNeg = Constraint1[Int, String](-10, "BigNeg", code = (x: Int) => "BigNeg", because = (x: Int) => x < -5);
-  val vBigNeg = Constraint1[Int, String](-100, "VBigNeg", code = (x: Int) => "VBigNeg", because = (x: Int) => x < -50);
+ 
 
   "An engine " should "apply four constraints, whatever the order, in this smoke test" in {
     makeAndCheck(pos, bigPos, neg, bigNeg);

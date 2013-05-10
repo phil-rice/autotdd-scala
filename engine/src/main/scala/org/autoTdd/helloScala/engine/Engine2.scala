@@ -16,12 +16,14 @@ object Engine2 {
   def mutable[P1, P2, R](default: R = null) = new MutableEngine2[P1, P2, R](default)
   def immutable[P1, P2, R](default: R = null) = new ImmutableEngine2[P1, P2, R](default, List())
 }
-
-trait Engine2[P1, P2, R] extends Engine[R] with Function2[P1, P2, R] with EngineToString[R] {
+trait Engine2Types[P1, P2, R] extends EngineTypes[R] {
   type B = (P1, P2) => Boolean
   type RFn = (P1, P2) => R
   type C = Constraint2[P1, P2, R]
 
+}
+
+trait Engine2[P1, P2, R] extends Engine[R] with Function2[P1, P2, R] with EngineToString[R] with Engine2Types[P1, P2, R] {
   def apply(p1: P1, p2: P2): R = {
     val rFn = evaluate(b => b(p1, p2), root)
     rFn(p1, p2)

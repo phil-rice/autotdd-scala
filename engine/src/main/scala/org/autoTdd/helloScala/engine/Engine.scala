@@ -10,7 +10,7 @@ class ConstraintBecauseException(msg: String) extends RuntimeException(msg)
 class ConstraintResultException(msg: String) extends RuntimeException(msg)
 class EngineResultException(msg: String) extends RuntimeException(msg)
 
-case class Node[B, RFn](val because: Because[B], val inputs: List[Any], val yes: Either[CodeFn[RFn], Node[B, RFn]], no: Either[CodeFn[RFn], Node[B, RFn]])
+case class Node[B, RFn, R, C <: Constraint[B, RFn, R]](val because: Because[B], val inputs: List[Any], val extraConstraints: List[C], val yes: Either[CodeFn[RFn], Node[B, RFn, R, C]], no: Either[CodeFn[RFn], Node[B, RFn, R, C]])
 
 trait EngineTypes[R] {
   type B
@@ -20,14 +20,16 @@ trait EngineTypes[R] {
   type BecauseClosure = (B) => Boolean
   type ResultClosure = (RFn) => R
 
-  type N = Node[B, RFn]
-  type OptN = Option[Node[B, RFn]]
-  type RorN = Either[CodeFn[RFn], Node[B, RFn]]
-  def makeClosureForBecause(params: List[Any]): BecauseClosure
-  def makeClosureForResult(params: List[Any]): ResultClosure
+  type N = Node[B, RFn, R, C]
+  type Code = CodeFn[RFn]
+  type OptN = Option[N]
+  type RorN = Either[Code, N]
 }
 
 trait BuildEngine[R] extends EngineTypes[R] {
+
+  def makeClosureForBecause(params: List[Any]): BecauseClosure
+  def makeClosureForResult(params: List[Any]): ResultClosure
 
   def buildFromConstraints(root: RorN, cs: List[C]): RorN = {
     if (cs.isEmpty)
@@ -51,7 +53,7 @@ trait BuildEngine[R] extends EngineTypes[R] {
   def makeLeaf(c: C, defaultResult: CodeFn[RFn]): N = {
     val yes = Left(c.code)
     val no = Left(defaultResult)
-    Node[B, RFn](c.because, c.params, yes, no)
+    Node(c.because, c.params, List(), yes, no)
   }
 
   private def findLastMatch(fn: BecauseClosure, root: OptN, lastMatch: OptN, params: List[Any]): OptN = {
@@ -152,7 +154,6 @@ trait ImmutableEngine[R] extends Engine[R] {
     result
   }
 }
-
 
 abstract class MutableEngine[R](val defaultResult: R) extends Engine[R] {
   type CR = R
