@@ -14,6 +14,7 @@ import java.lang.reflect.Method
 import org.junit.runner.Result
 import junit.framework.Assert
 import org.junit.runner.notification.Failure
+import org.autotdd.constraints.Constraint
 
 class AutoTddRunner(val clazz: Class[Any]) extends Runner {
 
@@ -31,7 +32,7 @@ class AutoTddRunner(val clazz: Class[Any]) extends Runner {
     println(engine)
     engineMap = engineMap + (engineDescription -> engine)
     for (c <- engine.constraints) {
-      val name = c.params + " => " + c.expected + " " + c.becauseString
+      val name = c.params + " => " + c.expected + " " + c.because.becauseString
       val cleanedName = name.replace("(", "<").replace(")", ">");
 //      println("   " + name)
       val constraintDescription = Description.createSuiteDescription(cleanedName)

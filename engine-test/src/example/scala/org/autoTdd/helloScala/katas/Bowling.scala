@@ -3,6 +3,9 @@ package org.autoTdd.helloScala.katas
 import org.autoTdd.helloScala.engine.MutableEngine
 import org.junit.runner.RunWith
 import org.autoTdd.helloScala.engine.AutoTddRunner
+import org.autoTdd.helloScala.engine.MutableEngine
+import org.autoTdd.helloScala.engine.Engine2
+import org.autoTdd.helloScala.engine.MutableEngine
 
 class Hello3 {
 
@@ -10,36 +13,36 @@ class Hello3 {
 @RunWith(classOf[AutoTddRunner])
 object Hello2 {
 
-  val get = MutableEngine.engine2[List[Int], Int, Int](0);
-  val makeFrame = MutableEngine.engine2[List[Int], Int, Frame]()
+  val get = Engine2[List[Int], Int, Int](0);
+  val makeFrame = Engine2[List[Int], Int, Frame]()
 
   get constraint (List(7, 10, 4, 3), 0, 7,
-    (rolls, i) => rolls.apply(i),
-    (rolls, i) => i < rolls.length)
+    (rolls: List[Int], i: Int) => rolls.apply(i),
+    because = (rolls: List[Int], i: Int) => i < rolls.length)
 
   get constraint (List(7, 10, 4, 3), 4, 0, (x: List[Int], i: Int) => 0, (x: List[Int], i: Int) => true);
 
-  makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0, NormalFrame(7, 2), (rolls, i) => NormalFrame(get(rolls, i), get(rolls, i + 1)))
+  makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0, NormalFrame(7, 2), (rolls: List[Int], i: Int) => NormalFrame(get(rolls, i), get(rolls, i + 1)))
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0,
     NormalFrame(7, 2),
     (rolls: List[Int], i: Int) => {
       get(rolls, i)
-      val f: Int = get.constraint(rolls, 0, 7, (rolls, i) => rolls(i), (rolls, i) => i < rolls.length);
-      val s: Int = get.constraint(rolls, 1, 2, (rolls, i) => rolls(i), (rolls, i) => i < rolls.length);
+      val f: Int = get.constraint(rolls, 0, 7, (rolls: List[Int], i: Int) => rolls(i), (rolls: List[Int], i: Int) => i < rolls.length);
+      val s: Int = get.constraint(rolls, 1, 2, (rolls: List[Int], i: Int) => rolls(i), (rolls: List[Int], i: Int) => i < rolls.length);
       NormalFrame(f, s)
     })
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 2, SpareFrame(5, 5, 3),
-    (rolls, i) => SpareFrame(get(rolls, i), get(rolls, i + 1), rolls(i + 2)),
-    (rolls, i) => get(rolls, i) + get(rolls, i + 1) == 10)
+    (rolls: List[Int], i: Int) => SpareFrame(get(rolls, i), get(rolls, i + 1), rolls(i + 2)),
+    because = (rolls: List[Int], i: Int) => get(rolls, i) + get(rolls, i + 1) == 10)
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 4, NormalFrame(3, 0),
-    (rolls, i) => NormalFrame(get(rolls, i), get(rolls, i + 1)))
+    (rolls: List[Int], i: Int) => NormalFrame(get(rolls, i), get(rolls, i + 1)))
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 6, StrikeFrame(10, 2, 4),
-    (rolls, i) => StrikeFrame(rolls(i), get(rolls, i + 1), get(rolls, i + 2)),
-    (rolls, i) => get(rolls, i) == 10)
+    (rolls: List[Int], i: Int) => StrikeFrame(rolls(i), get(rolls, i + 1), get(rolls, i + 2)),
+    because = (rolls: List[Int], i: Int) => get(rolls, i) == 10)
 
   makeFrame.assertion(List(7), 0, NormalFrame(7, 0))
 
