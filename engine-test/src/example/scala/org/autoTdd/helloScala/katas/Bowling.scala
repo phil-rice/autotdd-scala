@@ -16,11 +16,7 @@ object Hello2 {
   val get = Engine2[List[Int], Int, Int](0);
   val makeFrame = Engine2[List[Int], Int, Frame]()
 
-  get constraint (List(7, 10, 4, 3), 0, 7,
-    (rolls: List[Int], i: Int) => rolls.apply(i),
-    because = (rolls: List[Int], i: Int) => i < rolls.length)
 
-  get constraint (List(7, 10, 4, 3), 4, 0, (x: List[Int], i: Int) => 0, (x: List[Int], i: Int) => true);
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0, NormalFrame(7, 2), (rolls: List[Int], i: Int) => NormalFrame(get(rolls, i), get(rolls, i + 1)))
 

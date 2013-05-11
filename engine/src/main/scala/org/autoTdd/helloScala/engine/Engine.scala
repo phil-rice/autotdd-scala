@@ -124,7 +124,7 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
   def makeDefaultRoot(defaultRoot: R): RorN
   def realConstraint(c: C): C = c
 
-  def validateConstraint(c: C) {
+  private def validateConstraint(c: C) {
     if (!makeClosureForBecause(c.params).apply(c.because.because))
       throw new ConstraintBecauseException(c.because.becauseString + " is not true for " + c.params);
     val actualFromConstraint = c.actualValueFromParameters
@@ -132,11 +132,25 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
       throw new ConstraintResultException("Wrong result for " + c.code.description + " for " + c.params + "\nActual: " + actualFromConstraint + "\nExpected: " + c.expected);
   }
 
-  def checkConstraint(c: C) {
+  private def checkConstraint(c: C) {
     validateConstraint(c);
     val actualFromEngine = applyParam(c.params);
     if (actualFromEngine != c.expected)
       throw new EngineResultException("Wrong result for " + c.code.description + " for " + c.params + "\nActual: " + actualFromEngine + "\nExpected: " + c.expected);
+  }
+
+  def addConstraintWithChecking(c: C, addingClosure: (C) => CR, default: CR): CR = {
+    try {
+      validateConstraint(c)
+      val result = addingClosure(c)
+      if (!EngineTest.testing)
+        checkConstraint(c)
+      result
+    } catch {
+      case e: Throwable if EngineTest.testing =>
+        EngineTest.exceptions = EngineTest.exceptions + (c -> e); default
+      case e: Throwable => throw e
+    }
   }
 
   def applyParam(params: List[Any]): R = {
@@ -167,13 +181,13 @@ trait ImmutableEngine[R] extends Engine[R] {
   def defaultResult: R
 
   def newEngine(defaultResult: R, constraints: List[C]): E
-
+  def oldEngine: E
   def addConstraint(c: C): CR = {
-    validateConstraint(c)
-    val newConstraints = (c :: constraints).reverse //could do better..
-    val result = newEngine(defaultResult, newConstraints)
-    checkConstraint(c)
-    result
+    addConstraintWithChecking(c, (c) => {
+      val newConstraints = (c :: constraints).reverse; //could do better..
+      val result = newEngine(defaultResult, newConstraints);
+      result
+    }, oldEngine)
   }
 }
 
@@ -183,10 +197,12 @@ abstract class MutableEngine[R](val defaultResult: R) extends Engine[R] {
   var constraints = List[C]()
 
   def addConstraint(c: C): CR = {
-    validateConstraint(c)
-    constraints = (c :: constraints).reverse //could do better..
-    root = buildFromConstraints(makeDefaultRoot(defaultResult), constraints)
-    c.expected
+    addConstraintWithChecking(c, (c) => {
+      val l = c :: constraints.reverse
+      val newConstraints = l.reverse
+      constraints= newConstraints
+      root = buildFromConstraints(makeDefaultRoot(defaultResult), constraints); 
+      c.expected }, c.expected);
   }
 }
 

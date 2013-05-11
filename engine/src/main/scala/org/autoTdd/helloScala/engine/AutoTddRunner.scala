@@ -16,13 +16,31 @@ import junit.framework.Assert
 import org.junit.runner.notification.Failure
 import org.autotdd.constraints.Constraint
 
+object EngineTest {
+  def testing = _testing
+  private var _testing = false
+
+  var exceptions: Map[Any, Throwable] = Map()
+
+  def test[T](x: () => T) = {
+    _testing = true;
+    try {
+      x()
+    } finally
+      _testing = false
+  }
+
+}
+
 class AutoTddRunner(val clazz: Class[Any]) extends Runner {
 
   val getDescription = Description.createSuiteDescription("ATDD: " + clazz.getName);
-  val instance = instantiate(clazz)
+
+  val instance = EngineTest.test(() => { instantiate(clazz) });
 
   var engineMap: Map[Description, Engine[Any]] = Map()
   var constraintMap: Map[Description, Constraint[Any, Any, Any]] = Map()
+  var exceptionMap: Map[Description, Throwable] = Map()
 
   for (m <- clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m))) {
     val engineDescription = Description.createSuiteDescription(m.getName())
@@ -34,7 +52,7 @@ class AutoTddRunner(val clazz: Class[Any]) extends Runner {
     for (c <- engine.constraints) {
       val name = c.params + " => " + c.expected + " " + c.because.becauseString
       val cleanedName = name.replace("(", "<").replace(")", ">");
-//      println("   " + name)
+      println("   " + cleanedName)
       val constraintDescription = Description.createSuiteDescription(cleanedName)
       engineDescription.addChild(constraintDescription)
       constraintMap = constraintMap + (constraintDescription -> c.asInstanceOf[Constraint[Any, Any, Any]])
@@ -42,25 +60,34 @@ class AutoTddRunner(val clazz: Class[Any]) extends Runner {
   }
 
   def run(notifier: RunNotifier) {
-    notifier.fireTestStarted(getDescription)
-    for (ed <- getDescription.getChildren) {
-      notifier.fireTestStarted(ed)
-      val engine = engineMap(ed)
-      for (cd <- ed.getChildren) {
-        notifier.fireTestStarted(cd)
-        val constraint = constraintMap(cd)
-        val b = engine.makeClosureForBecause(constraint.params);
-        val actual = engine.applyParam(constraint.params)
-        try {
-          Assert.assertEquals(constraint.expected, actual)
-          notifier.fireTestFinished(cd)
-        } catch {
-          case e: Throwable => notifier.fireTestFailure(new Failure(cd, e))
+    EngineTest.test(() => {
+      notifier.fireTestStarted(getDescription)
+      for (ed <- getDescription.getChildren) {
+        notifier.fireTestStarted(ed)
+        val engine = engineMap(ed)
+        for (cd <- ed.getChildren) {
+          notifier.fireTestStarted(cd)
+          val constraint = constraintMap(cd)
+          if (EngineTest.exceptions.contains(constraint))
+            notifier.fireTestFailure(new Failure(cd, EngineTest.exceptions(constraint)))
+          else {
+            val b = engine.makeClosureForBecause(constraint.params);
+            val actual = engine.applyParam(constraint.params)
+            try {
+              Assert.assertEquals(constraint.expected, actual)
+              notifier.fireTestFinished(cd)
+            } catch {
+              case e: Throwable => notifier.fireTestFailure(new Failure(cd, e))
+            }
+          }
+          notifier.fireTestFinished(ed)
         }
+        println("Constraints for: " + ed.getDisplayName())
+        for (c <- engine.constraints)
+          println("  " + c)
       }
-      notifier.fireTestFinished(ed)
-    }
-    notifier.fireTestFinished(getDescription)
+      notifier.fireTestFinished(getDescription)
+    })
   }
   def returnTypeIsEngine(m: Method): Boolean = {
     val rt = m.getReturnType()

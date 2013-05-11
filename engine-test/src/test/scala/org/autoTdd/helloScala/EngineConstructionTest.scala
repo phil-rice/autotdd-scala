@@ -13,7 +13,6 @@ import org.autoTdd.helloScala.engine.Node
 import org.autoTdd.helloScala.engine._
 
 class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenParserTestTrait {
-
   def check(engine: Engine1[String, String], expected: String) {
     val exceptedTree = p(expected)
     val actual = comparator.compare(exceptedTree, engine.root)
@@ -24,6 +23,7 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenPar
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A");
     check(engine, "if a/a then x else z")
+    checkConstraints(engine, "A");
   }
 
   it should "add to else path if first constraints doesnt match second" in {
@@ -31,6 +31,7 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenPar
     engine.constraint("A", "X", because = "A");
     engine.constraint("B", "Y", because = "B");
     check(engine, "if a/a then x else if b/b then y else z")
+    checkConstraints(engine, "A", "B");
   }
 
   it should "add to then path if second constraint is valid in first" in {
@@ -38,6 +39,7 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenPar
     engine.constraint("A", "X", because = "A");
     engine.constraint("AB", "Y", because = "B");
     check(engine, "if a/a if b/ab then y else x else z")
+    checkConstraints(engine, "A", "B");
   }
 
   it should "add constraint as an assertion if the because string is identical" in {
@@ -45,6 +47,15 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenPar
     engine.constraint("AB", "X", because = "A");
     engine.constraint("AA", "X", because = "A");
     check(engine, "if a/ab#a/aa->x then x else  z")
+    checkConstraints(engine, "A", "A");
+  }
+
+  it should "keep the order of constraints" in {
+    val engine = Engine1[String, String](default = "Z");
+    engine.constraint("A", "X", because = "A");
+    engine.constraint("C", "X", because = "C");
+    engine.constraint("B", "X", because = "B");
+    checkConstraints(engine, "A", "C", "B");
   }
 
   //TODO Consider how to deal with identical result, different because. It's not clear to me what I should do
@@ -57,6 +68,13 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenPar
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("AB", "Y", because = "B");
     evaluating { engine.constraint("AB", "X", because = "A") } should produce[ConstraintConflictException]
+  }
+
+  def checkConstraints(engine: Engine1[String, String], expected: String*) {
+    assert(engine.constraints.size == expected.size)
+    for ((c, a) <- (engine.constraints, expected).zipped) {
+      assert(c.because.becauseString == a, "Expected: " + a + " Actual " + c + "\n   Constraints: " + engine.constraints)
+    }
   }
 
 }
