@@ -5,6 +5,7 @@ import scala.language.experimental.macros
 
 abstract class Constraint[B, RFn, R](val expected: R, val code: CodeFn[RFn], val because: Because[B]) {
   def params: List[Any]
+  def actualValueFromParameters : R
 }
 
 case class CodeFn[RFn](val rfn: RFn, val description: String)

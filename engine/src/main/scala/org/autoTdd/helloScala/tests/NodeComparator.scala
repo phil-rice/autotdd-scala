@@ -31,8 +31,27 @@ trait NodeComparator[R] extends EngineTypes[R] {
   def compare(prefix: String, n1: N, n2: N): List[String] = {
     check(prefix + "because {0} {1}", n1.because.becauseString, n2.because.becauseString) ++
       check(prefix + "inputs {0} {1}", n1.inputs, n2.inputs) ++
+      compareConstraints(prefix + "constraints/", n1.extraConstraints, n2.extraConstraints) ++
       compare(prefix + "yes/", n1.yes, n2.yes) ++
       compare(prefix + "no/", n1.no, n2.no)
+  }
+
+  def compareConstraints(prefix: String, c1s: List[C], c2s: List[C]): List[String] = {
+    val sizeMismatch = c1s.size != c2s.size match { case true => List(prefix + " sizes " + c1s.size + "," + c2s.size); case _ => List() };
+    sizeMismatch ++ (c1s, c2s).zipped.flatMap((c1, c2) => c1 != c2 match { case true => compareConstraint(prefix, c1, c2); case _ => List() });
+  }
+
+  def compareConstraint(prefix: String, c1: C, c2: C): List[String] = {
+    val b = c1.because.becauseString != c2.because.becauseString match { case true => List(prefix + "because " + c1.because.becauseString + ", " + c2.because.becauseString); case _ => List() }
+    val e = c1.expected != c2.expected match { case true => List(prefix + "expected " + c1.expected + ", " + c2.expected); case _ => List() }
+    val c = c1.code.description != c2.code.description match { case true => List(prefix + "code " + c1.code.description + ", " + c2.code.description); case _ => List() }
+    b ++ e ++ c
+  }
+  def compareSize(prefix: String, c1s: List[C], c2s: List[C]): List[String] = {
+    if (c1s.size != c2s.size)
+      List(prefix + " sizes " + c1s.size + "," + c2s.size);
+    else
+      List()
   }
 
   def check[T <: AnyRef](pattern: String, t1: T, t2: T): List[String] = {

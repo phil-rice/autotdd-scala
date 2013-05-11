@@ -12,49 +12,51 @@ import org.autotdd.constraints.Because
 import org.autoTdd.helloScala.engine.Node
 import org.autoTdd.helloScala.engine._
 
-class EngineConstructionTest extends FlatSpec with ShouldMatchers with Engine1Types[String, String] {
-  def comparator = NodeComparator.comparator1[String, String]
-  implicit def string_to_because(s: String) = new Because[B]((x) => x contains s, s.toString())
-  implicit def string_to_result(s: String) = new CodeFn[RFn]((x) => s, s.toString())
-
-  def node(b: B, inputs: List[Any], yes: RorN, no: RorN) = new Node(b, inputs, List(), yes, no);
-  def rightNode(b: Because[B], inputs: List[Any], yes: RorN, no: RorN) = Right(new Node(b, inputs, List(), yes, no));
-
-  val p = IfThenParser.parser1[String, String](
-    becauses = Map("a" -> "a", "b" -> "b", "c" -> "c"),
-    inputs = Map("a" -> "a", "b" -> "b", "ab" -> "ab", "c" -> "c"),
-    thens = Map("w" -> "W", "x" -> "X", "y" -> "Y", "z" -> "Z"))
+class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenParserTestTrait {
 
   def check(engine: Engine1[String, String], expected: String) {
-    val actual = comparator.compare(p(expected), engine.root)
-    assert(actual == List(), actual)
+    val exceptedTree = p(expected)
+    val actual = comparator.compare(exceptedTree, engine.root)
+    assert(actual == List(), actual + "\nExpected: " + exceptedTree + "\n Actual: " + engine.root + "\nEngine:\n" + engine)
   }
 
   "An engine" should "change from root to if then with one constraint" in {
     val engine = Engine1[String, String](default = "Z");
-    engine.constraint("a", "X", because = "a");
+    engine.constraint("A", "X", because = "A");
     check(engine, "if a/a then x else z")
   }
 
   it should "add to else path if first constraints doesnt match second" in {
     val engine = Engine1[String, String](default = "Z");
-    engine.constraint("a", "X", because = "a");
-    engine.constraint("b", "Y", because = "b");
+    engine.constraint("A", "X", because = "A");
+    engine.constraint("B", "Y", because = "B");
     check(engine, "if a/a then x else if b/b then y else z")
   }
 
   it should "add to then path if second constraint is valid in first" in {
     val engine = Engine1[String, String](default = "Z");
-    engine.constraint("a", "X", because = "a");
-    engine.constraint("ab", "Y", because = "b");
+    engine.constraint("A", "X", because = "A");
+    engine.constraint("AB", "Y", because = "B");
     check(engine, "if a/a if b/ab then y else x else z")
   }
+
   it should "add constraint as an assertion if the because string is identical" in {
     val engine = Engine1[String, String](default = "Z");
-    engine.constraint("a", "X", because = "a");
-    engine.constraint("aa", "X", because = "a");
-    check(engine, "if a/a then x else if b/b then y else z")
+    engine.constraint("AB", "X", because = "A");
+    engine.constraint("AA", "X", because = "A");
+    check(engine, "if a/ab#a/aa->x then x else  z")
+  }
 
+  //TODO Consider how to deal with identical result, different because. It's not clear to me what I should do
+  it should "throw exception if  cannot differentiate inputs, identical result, different because" in {
+    val engine = Engine1[String, String](default = "Z");
+    engine.constraint("AB", "X", because = "B");
+    evaluating { engine.constraint("AB", "X", because = "A") } should produce[ConstraintConflictException]
+  }
+  it should "throw exception if  cannot differentiate inputs, different result" in {
+    val engine = Engine1[String, String](default = "Z");
+    engine.constraint("AB", "Y", because = "B");
+    evaluating { engine.constraint("AB", "X", because = "A") } should produce[ConstraintConflictException]
   }
 
 }

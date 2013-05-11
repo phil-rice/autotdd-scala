@@ -9,6 +9,7 @@ import org.autotdd.constraints.Because
 class ConstraintBecauseException(msg: String) extends RuntimeException(msg)
 class ConstraintResultException(msg: String) extends RuntimeException(msg)
 class EngineResultException(msg: String) extends RuntimeException(msg)
+class ConstraintConflictException(msg: String) extends RuntimeException(msg)
 
 case class Node[B, RFn, R, C <: Constraint[B, RFn, R]](val because: Because[B], val inputs: List[Any], val extraConstraints: List[C], val yes: Either[CodeFn[RFn], Node[B, RFn, R, C]], no: Either[CodeFn[RFn], Node[B, RFn, R, C]])
 
@@ -42,12 +43,33 @@ trait BuildEngine[R] extends EngineTypes[R] {
     val fn = makeClosureForBecause(c.params)
     r match {
       case Left(l) => Right(makeLeaf(c, l))
+      case Right(r) if r.yes.isLeft =>
+        makeClosureForBecause(c.params)(r.because.because) match {
+          case true => dealWithYesInLeaf(r, c)
+          case false => Right(r.copy(no = withConstraint(r.no, c)));
+        }
       case Right(r) =>
         makeClosureForBecause(c.params)(r.because.because) match {
           case true => Right(r.copy(yes = withConstraint(r.yes, c)));
           case false => Right(r.copy(no = withConstraint(r.no, c)));
         }
     }
+  }
+
+  private def dealWithYesInLeaf(leaf: N, c: C): RorN = {
+    makeClosureForBecause(leaf.inputs)(c.because.because) match {
+      case true => addConstraintToLeaf(leaf, c) //ok we have problem so wimping out
+      case false => Right(leaf.copy(yes = withConstraint(leaf.yes, c)));
+    }
+  }
+  private def addConstraintToLeaf(leaf: N, c: C): RorN = {
+    if (leaf.yes.isRight)
+      throw new IllegalStateException;
+    if (leaf.because.becauseString != c.because.becauseString)
+      throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
+    if (leaf.yes.left.get.description != c.code.description)
+      throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
+    return Right(leaf.copy(extraConstraints = c :: leaf.extraConstraints))
   }
 
   def makeLeaf(c: C, defaultResult: CodeFn[RFn]): N = {
@@ -105,7 +127,7 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
   def validateConstraint(c: C) {
     if (!makeClosureForBecause(c.params).apply(c.because.because))
       throw new ConstraintBecauseException(c.because.becauseString + " is not true for " + c.params);
-    val actualFromConstraint = makeClosureForResult(c.params).apply(c.code.rfn)
+    val actualFromConstraint = c.actualValueFromParameters
     if (actualFromConstraint != c.expected)
       throw new ConstraintResultException("Wrong result for " + c.code.description + " for " + c.params + "\nActual: " + actualFromConstraint + "\nExpected: " + c.expected);
   }

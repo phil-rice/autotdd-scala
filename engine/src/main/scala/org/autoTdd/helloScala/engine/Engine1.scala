@@ -6,9 +6,11 @@ import org.autotdd.constraints.Constraint
 import org.autotdd.constraints.CodeFn
 import org.autotdd.constraints.Because
 
-case class Constraint1[P, R](val param: P, override val expected: R, override val code: CodeFn[(P) => R], override val because: Because[(P) => Boolean])
+case class Constraint1[P, R](val param: P, override val expected: R , override val code: CodeFn[(P) => R], override val because: Because[(P) => Boolean])
   extends Constraint[(P) => Boolean, (P) => R, R](expected, code, because) {
   override def params = List(param)
+  
+  def actualValueFromParameters =code.rfn(param)
 }
 
 object Engine1 {
