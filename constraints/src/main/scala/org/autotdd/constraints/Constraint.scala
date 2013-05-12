@@ -3,20 +3,20 @@ package org.autotdd.constraints
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-abstract class Constraint[B, RFn, R](val expected: R, val code: CodeFn[RFn], val because: Because[B]) {
+abstract class Constraint[B, RFn, R, C](val expected: R, val code: CodeFn[RFn, C], val because: Because[B]) {
   def params: List[Any]
   def actualValueFromParameters : R
   def hasDefaultBecause = because.becauseString == "true" //TODO replace hasDefaultBecause with better strategy. Magic strings not so good
 }
 
-case class CodeFn[RFn](val rfn: RFn, val description: String)
+case class CodeFn[RFn, C](val rfn: RFn, val description: String, val constraints: List[C] = List[C]())
 
 object CodeFn {
-  implicit def r_to_result[RFn](r: RFn): CodeFn[RFn] = macro c_to_code_impll[RFn]
+  implicit def r_to_result[RFn, C](r: RFn): CodeFn[RFn, C] = macro c_to_code_impll[RFn, C]
 
-  def c_to_code_impll[RFn: c.WeakTypeTag](c: Context)(r: c.Expr[RFn]): c.Expr[CodeFn[RFn]] = {
+  def c_to_code_impll[RFn: c.WeakTypeTag, C: c.WeakTypeTag](c: Context)(r: c.Expr[RFn]): c.Expr[CodeFn[RFn, C]] = {
     import c.universe._
-    reify { CodeFn[RFn](r.splice, c.literal(show(r.tree)).splice) }
+    reify { CodeFn[RFn, C](r.splice, c.literal(show(r.tree)).splice) }
   }
 
 }

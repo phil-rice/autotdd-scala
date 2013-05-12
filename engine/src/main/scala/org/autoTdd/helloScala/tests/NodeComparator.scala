@@ -31,7 +31,7 @@ trait NodeComparator[R] extends EngineTypes[R] {
   def compare(prefix: String, n1: N, n2: N): List[String] = {
     check(prefix + "because {0} {1}", n1.because.becauseString, n2.because.becauseString) ++
       check(prefix + "inputs {0} {1}", n1.inputs, n2.inputs) ++
-      compareConstraints(prefix + "constraints/", n1.extraConstraints, n2.extraConstraints) ++
+//      compareConstraints(prefix + "constraints/", n1.extraConstraints, n2.extraConstraints) ++
       compare(prefix + "yes/", n1.yes, n2.yes) ++
       compare(prefix + "no/", n1.no, n2.no)
   }

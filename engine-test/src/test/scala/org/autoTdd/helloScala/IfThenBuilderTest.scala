@@ -17,12 +17,11 @@ import org.autoTdd.helloScala.engine.Constraint1
 trait IfThenParserTestTrait extends Engine1Types[String, String] with ShouldMatchers {
 
   implicit def string_to_because(s: String) = new Because[B]((x) => x contains s, s.toString())
-  implicit def string_to_result(s: String) = new CodeFn[RFn]((x) => s, s.toString())
+  implicit def string_to_result(s: String) = new CodeFn[RFn,C]((x) => s, s.toString())
   implicit def string_to_constraint(s: String) = new Constraint1[String, String](s, s, s, s)
 
-  def node(b: B, inputs: List[Any], yes: RorN, no: RorN) = new Node(b, inputs, List(), yes, no);
-  def rightNode(b: Because[B], inputs: List[Any], yes: RorN, no: RorN) = Right(new Node(b, inputs, List(), yes, no));
-  def rightNode(b: Because[B], inputs: List[Any], constraints: List[C], yes: RorN, no: RorN) = Right(new Node(b, inputs, constraints, yes, no));
+  def node(b: B, inputs: List[Any], yes: RorN, no: RorN) = new Node(b, inputs,  yes, no);
+  def rightNode(b: Because[B], inputs: List[Any], yes: RorN, no: RorN) = Right(new Node(b, inputs, yes, no));
 
   val p = IfThenParser.parser1[String, String](
     becauses = Map("a" -> "A", "aa" -> "AA", "b" -> "B", "c" -> "C"),
@@ -55,9 +54,9 @@ class IfThenBuilderTest extends FlatSpec with ShouldMatchers with IfThenParserTe
     assertMatches(p("if a/a,b if b then w else x else y"), rightNode("A", List("A", "B"), rightNode("B", List(), Left("W"), Left("X")), Left("Y")))
   }
 
-  it should "produce extra constraints" in {
-    val aa = Constraint1[String, String]("A", "X", "X", "AA")
-    assertMatches(p("if a/a,b#aa/aa->x if b then w else x else y"), rightNode("A", List("A", "B"), List(aa), rightNode("B", List(), Left("W"), Left("X")), Left("Y")))
-  }
+//  it should "produce extra constraints" in {
+//    val aa = Constraint1[String, String]("A", "X", "X", "AA")
+//    assertMatches(p("if a/a,b#aa/aa->x if b then w else x else y"), rightNode("A", List("A", "B"), List(aa), rightNode("B", List(), Left("W"), Left("X")), Left("Y")))
+//  }
 
 }

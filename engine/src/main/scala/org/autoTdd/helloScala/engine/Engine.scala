@@ -10,101 +10,22 @@ class ConstraintBecauseException(msg: String) extends RuntimeException(msg)
 class ConstraintResultException(msg: String) extends RuntimeException(msg)
 class EngineResultException(msg: String) extends RuntimeException(msg)
 class ConstraintConflictException(msg: String) extends RuntimeException(msg)
+class AssertionException(msg: String) extends RuntimeException(msg)
 
-case class Node[B, RFn, R, C <: Constraint[B, RFn, R]](val because: Because[B], val inputs: List[Any], val extraConstraints: List[C], val yes: Either[CodeFn[RFn], Node[B, RFn, R, C]], no: Either[CodeFn[RFn], Node[B, RFn, R, C]])
+case class Node[B, RFn, R, C <: Constraint[B, RFn, R, C]](val because: Because[B], val inputs: List[Any], val yes: Either[CodeFn[RFn, C], Node[B, RFn, R, C]], no: Either[CodeFn[RFn, C], Node[B, RFn, R, C]])
 
 trait EngineTypes[R] {
   type B
   type RFn
-  type C <: Constraint[B, RFn, R]
+  type C <: Constraint[B, RFn, R, C]
 
   type BecauseClosure = (B) => Boolean
   type ResultClosure = (RFn) => R
 
   type N = Node[B, RFn, R, C]
-  type Code = CodeFn[RFn]
+  type Code = CodeFn[RFn, C]
   type OptN = Option[N]
   type RorN = Either[Code, N]
-}
-
-trait BuildEngine[R] extends EngineTypes[R] {
-  def makeClosureForBecause(params: List[Any]): BecauseClosure
-  def makeClosureForResult(params: List[Any]): ResultClosure
-
-  def buildFromConstraints(root: RorN, cs: List[C]): RorN = {
-    cs.size match {
-      case 0 => root;
-      case 1 =>
-        val c = cs.head; if (c.hasDefaultBecause) Left(c.code) else buildFromConstraintsRemainder(withConstraint(root, cs.head), cs.tail)
-      case _ => buildFromConstraintsRemainder(withConstraint(root, cs.head), cs.tail)
-    }
-  }
-  private def buildFromConstraintsRemainder(root: RorN, cs: List[C]): RorN = {
-    cs.size match {
-      case 0 => root;
-      case _ => buildFromConstraintsRemainder(withConstraint(root, cs.head), cs.tail)
-    }
-  }
-
-  private def withConstraint(r: RorN, c: C): RorN = {
-    val fn = makeClosureForBecause(c.params)
-    r match {
-      case Left(l) => Right(makeLeaf(c, l))
-      case Right(r) if r.yes.isLeft =>
-        makeClosureForBecause(c.params)(r.because.because) match {
-          case true => dealWithYesInLeaf(r, c)
-          case false => Right(r.copy(no = withConstraint(r.no, c)));
-        }
-      case Right(r) =>
-        makeClosureForBecause(c.params)(r.because.because) match {
-          case true => Right(r.copy(yes = withConstraint(r.yes, c)));
-          case false => Right(r.copy(no = withConstraint(r.no, c)));
-        }
-    }
-  }
-
-  private def dealWithYesInLeaf(leaf: N, c: C): RorN = {
-    if (c.hasDefaultBecause)
-      addConstraintToLeaf(leaf, c)
-    else
-      makeClosureForBecause(leaf.inputs)(c.because.because) match {
-        case true => addConstraintToLeaf(leaf, c) //ok we have problem so wimping out
-        case false => Right(leaf.copy(yes = withConstraint(leaf.yes, c)));
-      }
-  }
-  private def addConstraintToLeaf(leaf: N, c: C): RorN = {
-    if (leaf.yes.isRight)
-      throw new IllegalStateException;
-    if (!c.hasDefaultBecause)
-      if (leaf.because.becauseString != c.because.becauseString)
-        throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
-    if (leaf.yes.left.get.description != c.code.description)
-      throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
-    return Right(leaf.copy(extraConstraints = c :: leaf.extraConstraints))
-  }
-
-  def makeLeaf(c: C, defaultResult: CodeFn[RFn]): N = {
-    val yes = Left(c.code)
-    val no = Left(defaultResult)
-    Node(c.because, c.params, List(), yes, no)
-  }
-
-  private def findLastMatch(fn: BecauseClosure, root: OptN, lastMatch: OptN, params: List[Any]): OptN = {
-    root match {
-      case None => None
-      case Some(r) =>
-        fn(r.because.because) match {
-          case true => findLastMatch(fn, r.yes, root, params)
-          case false => findLastMatch(fn, r.no, lastMatch, params)
-        }
-    }
-  }
-  private def findLastMatch(fn: BecauseClosure, root: RorN, lastMatch: OptN, params: List[Any]): OptN = {
-    root match {
-      case Left(r) => lastMatch
-      case Right(n) => findLastMatch(fn, Some(n), lastMatch, params)
-    }
-  }
 }
 
 trait EvaluateEngine[R] extends EngineTypes[R] {
@@ -120,6 +41,80 @@ trait EvaluateEngine[R] extends EngineTypes[R] {
     fn(n.because.because) match {
       case false => evaluate(fn, n.no);
       case true => evaluate(fn, n.yes);
+    }
+  }
+}
+trait BuildEngine[R] extends EvaluateEngine[R] {
+  def makeClosureForBecause(params: List[Any]): BecauseClosure
+  def makeClosureForResult(params: List[Any]): ResultClosure
+
+  def buildFromConstraints(root: RorN, cs: List[C]): RorN = {
+    cs.size match {
+      case 0 => root;
+      case _ => buildFromConstraints(withConstraint(None, root, cs.head), cs.tail)
+    }
+  }
+
+  private def withConstraint(parent: Option[N], n: RorN, c: C): RorN = {
+    val fn = makeClosureForBecause(c.params)
+    val fnr = makeClosureForResult(c.params)
+    n match {
+      case Left(l) =>
+        c.hasDefaultBecause match {
+          case true =>
+            val actualResultIfUseThisNodesCode = fnr(l.rfn);
+            if (actualResultIfUseThisNodesCode != c.expected)
+              throw new AssertionException("Actual Result: " + actualResultIfUseThisNodesCode + "\nExpected: " + c.expected);
+            Left(l.copy(constraints = c :: l.constraints))
+          case false =>
+            parent match {
+              case Some(p) =>
+                val wouldBreakExisting = makeClosureForBecause(p.inputs)(c.because.because)
+                if (wouldBreakExisting)
+                  throw new ConstraintConflictException("Cannot differentiate between\nExisting: " + p + "\nConstraint: " + c)
+              case _ =>
+            }
+            Right(Node(c.because, c.params, Left(c.code.copy(constraints = c :: c.code.constraints)), Left(l)))
+        }
+      case Right(r) =>
+        makeClosureForBecause(c.params)(r.because.because) match {
+          case true => Right(r.copy(yes = withConstraint(Some(r), r.yes, c)));
+          case false => Right(r.copy(no = withConstraint(Some(r), r.no, c)));
+        }
+    }
+  }
+
+  //  private def dealWithNoMoreYes(leaf: N, c: C): RorN = {
+  //    makeClosureForBecause(leaf.inputs)(c.because.because) match {
+  //      case true => addConstraintToLeaf(leaf, c) //ok we have problem so wimping out
+  //      case false => Right(leaf.copy(yes = withConstraint(leaf.yes, c)));
+  //    }
+  //  }
+  //  private def addConstraintToLeaf(leaf: N, c: C): RorN = {
+  //    if (leaf.yes.isRight)
+  //      throw new IllegalStateException;
+  //    if (!c.hasDefaultBecause)
+  //      if (leaf.because.becauseString != c.because.becauseString)
+  //        throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
+  //    if (leaf.yes.left.get.description != c.code.description)
+  //      throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
+  //    return Right(leaf.copy(yes = leaf.yes.right.get.copy(constraints = c :: leaf.extraConstraints))
+  //  }
+
+  private def findLastMatch(fn: BecauseClosure, root: OptN, lastMatch: OptN, params: List[Any]): OptN = {
+    root match {
+      case None => None
+      case Some(r) =>
+        fn(r.because.because) match {
+          case true => findLastMatch(fn, r.yes, root, params)
+          case false => findLastMatch(fn, r.no, lastMatch, params)
+        }
+    }
+  }
+  private def findLastMatch(fn: BecauseClosure, root: RorN, lastMatch: OptN, params: List[Any]): OptN = {
+    root match {
+      case Left(r) => lastMatch
+      case Right(n) => findLastMatch(fn, Some(n), lastMatch, params)
     }
   }
 }

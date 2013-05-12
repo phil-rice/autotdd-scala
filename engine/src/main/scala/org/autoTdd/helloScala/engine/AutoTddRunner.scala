@@ -39,7 +39,7 @@ class AutoTddRunner(val clazz: Class[Any]) extends Runner {
   val instance = EngineTest.test(() => { instantiate(clazz) });
 
   var engineMap: Map[Description, Engine[Any]] = Map()
-  var constraintMap: Map[Description, Constraint[Any, Any, Any]] = Map()
+  var constraintMap: Map[Description, Constraint[Any, Any, Any, Any]] = Map()
   var exceptionMap: Map[Description, Throwable] = Map()
 
   for (m <- clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m))) {
@@ -50,12 +50,12 @@ class AutoTddRunner(val clazz: Class[Any]) extends Runner {
     println(engine)
     engineMap = engineMap + (engineDescription -> engine)
     for (c <- engine.constraints) {
-      val name = c.params + " => " + c.expected + " " + c.because.becauseString
+      val name = c.params.reduce((acc, p) => acc + ", " + p) + " => " + c.expected + " " + c.because.becauseString
       val cleanedName = name.replace("(", "<").replace(")", ">");
-      println("   " + cleanedName)
+//      println("   " + cleanedName)
       val constraintDescription = Description.createSuiteDescription(cleanedName)
       engineDescription.addChild(constraintDescription)
-      constraintMap = constraintMap + (constraintDescription -> c.asInstanceOf[Constraint[Any, Any, Any]])
+      constraintMap = constraintMap + (constraintDescription -> c.asInstanceOf[Constraint[Any, Any, Any, Any]])
     }
   }
 
@@ -82,9 +82,9 @@ class AutoTddRunner(val clazz: Class[Any]) extends Runner {
           }
           notifier.fireTestFinished(ed)
         }
-        println("Constraints for: " + ed.getDisplayName())
-        for (c <- engine.constraints)
-          println("  " + c)
+//        println("Constraints for: " + ed.getDisplayName())
+//        for (c <- engine.constraints)
+//          println("  " + c)
       }
       notifier.fireTestFinished(getDescription)
     })
