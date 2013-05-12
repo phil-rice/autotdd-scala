@@ -70,6 +70,35 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with IfThenPar
     evaluating { engine.constraint("AB", "X", because = "A") } should produce[ConstraintConflictException]
   }
 
+  it should "Replace default if first because isn't specified" in {
+    val engine = Engine1[String, String](default = "X");
+    engine.constraint("A", "X")
+    check(engine, "x")
+  }
+
+  it should "Throw ConstraintConflictException  if first constraint is assertion and comes to wrong result" in {
+    val engine = Engine1[String, String](default = "Z");
+    engine.constraint("A", "X")
+    check(engine, "x")
+  }
+
+  it should "assertions should add themselves to existing nodes" in {
+    val engine = Engine1[String, String](default = "Z");
+    engine.constraint("A", "X", because = "A")
+    check(engine, "if a/a then x else z") //just documenting what we have 
+    engine.constraint("AA", "X")
+    val aAsConstraint = engine.constraints(0)
+    val aaAsConstraint = engine.constraints(1)
+    val expected: RorN = Right(Node[B, RFn, String, C](aAsConstraint.because, aAsConstraint.params, List(aaAsConstraint), Left("X"), Left("Z")))
+    assertMatches(engine.root, expected)
+  }
+
+  it should "throw ConstraintConflictException if the added constraint is an assertion and comes to wrong result" in {
+    val engine = Engine1[String, String](default = "Z");
+    engine.constraint("A", "X", because = "A")
+    evaluating { engine.constraint("AA", "X") } should produce[ConstraintConflictException]
+  }
+
   def checkConstraints(engine: Engine1[String, String], expected: String*) {
     assert(engine.constraints.size == expected.size)
     for ((c, a) <- (engine.constraints, expected).zipped) {

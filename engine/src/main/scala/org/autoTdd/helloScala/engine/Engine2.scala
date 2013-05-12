@@ -34,12 +34,14 @@ trait Engine2[P1, P2, R] extends Engine[R] with Function2[P1, P2, R] with Engine
   def makeClosureForResult(params: List[Any]) = (r) => r(params(0).asInstanceOf[P1], params(1).asInstanceOf[P2])
 
   def assertion(p1: P1, p2: P2, expected: R): CR = constraint(p1, p2, expected)
-  def constraint(p1: P1, p2: P2, expected: R, code: CodeFn[RFn] = null, because: Because[B] = Because[(P1, P2) => Boolean]((p1: P1, p2: P2) => true, "true")): CR = {
+
+  def constraint(p1: P1, p2: P2, expected: R, code: CodeFn[RFn] = null, because: Because[B] = Because[(P1, P2) => Boolean]((p1, p2) => true, "true")): CR = {
     if (code == null)
       addConstraint(realConstraint(Constraint2(p1, p2, expected, CodeFn[RFn]((p1: P1, p2: P2) => expected, expected.toString), because)))
     else
       addConstraint(realConstraint(Constraint2(p1, p2, expected, code, because)))
   }
+
   def makeDefaultRoot(defaultRoot: R): RorN =
     Left(CodeFn((p1, p2) => defaultRoot, defaultRoot match {
       case null => "null"

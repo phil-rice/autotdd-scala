@@ -14,19 +14,23 @@ class Hello3 {
 object Hello2 {
 
   val get = Engine2[List[Int], Int, Int](0);
+
+  get constraint (List(7, 10, 4, 3), 0, 7,
+    (rolls: List[Int], i: Int) => rolls.apply(i),
+    (rolls: List[Int], i: Int) => i >= 0 && i < rolls.length)
+
+  get constraint (List(7, 10, 4, 3), -1, 0)
+  get constraint (List(7, 10, 4, 3), 4, 0)
+  get constraint (List(7, 10, 4, 3), 5, 0)
+
   val makeFrame = Engine2[List[Int], Int, Frame]()
-
-
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0, NormalFrame(7, 2), (rolls: List[Int], i: Int) => NormalFrame(get(rolls, i), get(rolls, i + 1)))
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0,
     NormalFrame(7, 2),
     (rolls: List[Int], i: Int) => {
-      get(rolls, i)
-      val f: Int = get.constraint(rolls, 0, 7, (rolls: List[Int], i: Int) => rolls(i), (rolls: List[Int], i: Int) => i < rolls.length);
-      val s: Int = get.constraint(rolls, 1, 2, (rolls: List[Int], i: Int) => rolls(i), (rolls: List[Int], i: Int) => i < rolls.length);
-      NormalFrame(f, s)
+      NormalFrame(get(rolls, i), get(rolls, i + 1))
     })
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 2, SpareFrame(5, 5, 3),

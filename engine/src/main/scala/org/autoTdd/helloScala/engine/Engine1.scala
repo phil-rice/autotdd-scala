@@ -6,11 +6,11 @@ import org.autotdd.constraints.Constraint
 import org.autotdd.constraints.CodeFn
 import org.autotdd.constraints.Because
 
-case class Constraint1[P, R](val param: P, override val expected: R , override val code: CodeFn[(P) => R], override val because: Because[(P) => Boolean])
+case class Constraint1[P, R](val param: P, override val expected: R, override val code: CodeFn[(P) => R], override val because: Because[(P) => Boolean])
   extends Constraint[(P) => Boolean, (P) => R, R](expected, code, because) {
   override def params = List(param)
-  
-  def actualValueFromParameters =code.rfn(param)
+
+  def actualValueFromParameters = code.rfn(param)
 }
 
 object Engine1 {
@@ -36,7 +36,7 @@ trait Engine1[P, R] extends Engine[R] with Function1[P, R] with EngineToString[R
 
   def assertion(p: P, expected: R): CR = constraint(p, expected)
 
-  def constraint(p: P, expected: R, code: CodeFn[RFn] = null, because: Because[B] = Because[(P => Boolean)]((p: P) => true, "true")): CR = {
+  def constraint(p: P, expected: R, code: CodeFn[RFn] = null, because: Because[B] = Because[(P => Boolean)]((P)=>true, "true")): CR = {
     if (code == null)
       addConstraint(realConstraint(Constraint1(p, expected, CodeFn[RFn]((p: P) => expected, expected.toString), because)))
     else

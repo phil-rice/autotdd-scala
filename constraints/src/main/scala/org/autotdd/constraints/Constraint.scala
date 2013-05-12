@@ -6,6 +6,7 @@ import scala.language.experimental.macros
 abstract class Constraint[B, RFn, R](val expected: R, val code: CodeFn[RFn], val because: Because[B]) {
   def params: List[Any]
   def actualValueFromParameters : R
+  def hasDefaultBecause = because.becauseString == "true" //TODO replace hasDefaultBecause with better strategy. Magic strings not so good
 }
 
 case class CodeFn[RFn](val rfn: RFn, val description: String)

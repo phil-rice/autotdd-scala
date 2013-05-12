@@ -28,15 +28,22 @@ trait EngineTypes[R] {
 }
 
 trait BuildEngine[R] extends EngineTypes[R] {
-
   def makeClosureForBecause(params: List[Any]): BecauseClosure
   def makeClosureForResult(params: List[Any]): ResultClosure
 
   def buildFromConstraints(root: RorN, cs: List[C]): RorN = {
-    if (cs.isEmpty)
-      root
-    else
-      buildFromConstraints(withConstraint(root, cs.head), cs.tail)
+    cs.size match {
+      case 0 => root;
+      case 1 =>
+        val c = cs.head; if (c.hasDefaultBecause) Left(c.code) else buildFromConstraintsRemainder(withConstraint(root, cs.head), cs.tail)
+      case _ => buildFromConstraintsRemainder(withConstraint(root, cs.head), cs.tail)
+    }
+  }
+  private def buildFromConstraintsRemainder(root: RorN, cs: List[C]): RorN = {
+    cs.size match {
+      case 0 => root;
+      case _ => buildFromConstraintsRemainder(withConstraint(root, cs.head), cs.tail)
+    }
   }
 
   private def withConstraint(r: RorN, c: C): RorN = {
@@ -57,16 +64,20 @@ trait BuildEngine[R] extends EngineTypes[R] {
   }
 
   private def dealWithYesInLeaf(leaf: N, c: C): RorN = {
-    makeClosureForBecause(leaf.inputs)(c.because.because) match {
-      case true => addConstraintToLeaf(leaf, c) //ok we have problem so wimping out
-      case false => Right(leaf.copy(yes = withConstraint(leaf.yes, c)));
-    }
+    if (c.hasDefaultBecause)
+      addConstraintToLeaf(leaf, c)
+    else
+      makeClosureForBecause(leaf.inputs)(c.because.because) match {
+        case true => addConstraintToLeaf(leaf, c) //ok we have problem so wimping out
+        case false => Right(leaf.copy(yes = withConstraint(leaf.yes, c)));
+      }
   }
   private def addConstraintToLeaf(leaf: N, c: C): RorN = {
     if (leaf.yes.isRight)
       throw new IllegalStateException;
-    if (leaf.because.becauseString != c.because.becauseString)
-      throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
+    if (!c.hasDefaultBecause)
+      if (leaf.because.becauseString != c.because.becauseString)
+        throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
     if (leaf.yes.left.get.description != c.code.description)
       throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
     return Right(leaf.copy(extraConstraints = c :: leaf.extraConstraints))
@@ -200,9 +211,10 @@ abstract class MutableEngine[R](val defaultResult: R) extends Engine[R] {
     addConstraintWithChecking(c, (c) => {
       val l = c :: constraints.reverse
       val newConstraints = l.reverse
-      constraints= newConstraints
-      root = buildFromConstraints(makeDefaultRoot(defaultResult), constraints); 
-      c.expected }, c.expected);
+      constraints = newConstraints
+      root = buildFromConstraints(makeDefaultRoot(defaultResult), constraints);
+      c.expected
+    }, c.expected);
   }
 }
 
