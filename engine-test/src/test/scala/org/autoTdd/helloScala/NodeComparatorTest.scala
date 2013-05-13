@@ -66,12 +66,12 @@ class NodeComparatorTest extends FlatSpec with ShouldMatchers with IfThenParserT
   it should "report errors if constraint inputs mismatch " in {
     val x1 = p("if a/a if b then w#b/aa else x else y")
     val x2 = p("if a/a if b then w#b/b else x else y")
-    check(x1, x2, List("yes/yes/constraints/params List(AA), List(B)"))
+    check(x1, x2, List("yes/yes/constraints/[B]params List(AA), List(B)"))
   }
   it should "report errors if constraint because  mismatch " in {
     val x1 = p("if a/a if b then w#aa/b else x else y")
     val x2 = p("if a/a if b then w#b/b else x else y")
-    check(x1, x2, List("yes/yes/constraints/because AA, B"))
+    check(x1, x2, List("yes/yes/constraints/[AA]because AA, B"))
   }
 
   def check(x1: RorN, x2: RorN, expected: List[String]) {

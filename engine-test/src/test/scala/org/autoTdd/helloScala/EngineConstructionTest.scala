@@ -33,7 +33,7 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with EngineTes
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A");
     engine.constraint("B", "Y", because = "B");
-    check(engine, "if a/a then x else if b/b then y else z")
+    check(engine, "if a/a then x#a/a else if b/b then y#b/b else z")
     checkConstraints(engine, "A", "B");
   }
 
@@ -41,7 +41,7 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with EngineTes
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A");
     engine.constraint("AB", "Y", because = "B");
-    check(engine, "if a/a if b/ab then y else x else z")
+    check(engine, "if a/a if b/ab then y#b/ab else x#a/a else z")
     checkConstraints(engine, "A", "B");
   }
 
@@ -68,12 +68,9 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with EngineTes
   it should "assertions should add themselves to existing nodes" in {
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A")
-    check(engine, "if a/a then x else z") //just documenting what we have 
+    check(engine, "if a/a then x#a/a else z")  
     engine.constraint("AA", "X")
-    val aAsConstraint = engine.constraints(0)
-    val aaAsConstraint = engine.constraints(1)
-    val expected: RorN = Right(Node[B, RFn, String, C](aAsConstraint.because.get, aAsConstraint.params, Left("X"), Left("Z")))
-    assertMatches(engine.root, expected)
+    check(engine, "if a/a then x#/aa,#a/a else z")  
   }
 
   it should "throw ConstraintConflictException if the added constraint is an assertion and comes to wrong result" in {

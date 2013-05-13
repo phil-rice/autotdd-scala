@@ -11,7 +11,7 @@ class EngineFirstConstraintTests extends FlatSpec with ShouldMatchers with Engin
   "An empty engine" should "change from root to if then with one constraint" in {
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A");
-    check(engine, "if a/a then x else z")
+    check(engine, "if a/a then x#a/a else z")
     checkConstraints(engine, "A");
   }
 
@@ -19,7 +19,7 @@ class EngineFirstConstraintTests extends FlatSpec with ShouldMatchers with Engin
     val engine = Engine1[String, String](default = "X");
     val initialRoot = engine.root.left.get
     engine.constraint("A", "X")
-    check(engine, "x")
+    check(engine, "x#/a")
     assertMatches(engine.root, Left(initialRoot.copy(constraints = engine.constraints)))
   }
 

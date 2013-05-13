@@ -11,6 +11,7 @@ class ConstraintResultException(msg: String) extends RuntimeException(msg)
 class EngineResultException(msg: String) extends RuntimeException(msg)
 class ConstraintConflictException(msg: String) extends RuntimeException(msg)
 class AssertionException(msg: String) extends RuntimeException(msg)
+//class CannotAccessBrokenEngineException(msg: String) extends RuntimeException(msg)
 
 case class Node[B, RFn, R, C <: Constraint[B, RFn, R, C]](val because: Because[B], val inputs: List[Any], val yes: Either[CodeFn[RFn, C], Node[B, RFn, R, C]], no: Either[CodeFn[RFn, C], Node[B, RFn, R, C]])
 
@@ -51,11 +52,11 @@ trait BuildEngine[R] extends EvaluateEngine[R] {
   def buildFromConstraints(root: RorN, cs: List[C]): RorN = {
     cs.size match {
       case 0 => root;
-      case _ => buildFromConstraints(withConstraint(None, root, cs.head), cs.tail)
+      case _ => buildFromConstraints(withConstraint(None, root, cs.head, false), cs.tail)
     }
   }
 
-  private def withConstraint(parent: Option[N], n: RorN, c: C): RorN = {
+  private def withConstraint(parent: Option[N], n: RorN, c: C, parentWasTrue: Boolean): RorN = {
     val fn = makeClosureForBecause(c.params)
     val fnr = makeClosureForResult(c.params)
     n match {
@@ -64,7 +65,7 @@ trait BuildEngine[R] extends EvaluateEngine[R] {
           case Some(b) =>
             parent match {
               case Some(p) =>
-                val wouldBreakExisting = makeClosureForBecause(p.inputs)(b.because)
+                val wouldBreakExisting = parentWasTrue & makeClosureForBecause(p.inputs)(b.because)
                 if (wouldBreakExisting)
                   throw new ConstraintConflictException("Cannot differentiate between\nExisting: " + p + "\nConstraint: " + c)
               case _ =>
@@ -79,8 +80,8 @@ trait BuildEngine[R] extends EvaluateEngine[R] {
 
       case Right(r) =>
         makeClosureForBecause(c.params)(r.because.because) match {
-          case true => Right(r.copy(yes = withConstraint(Some(r), r.yes, c)));
-          case false => Right(r.copy(no = withConstraint(Some(r), r.no, c)));
+          case true => Right(r.copy(yes = withConstraint(Some(r), r.yes, c, true)));
+          case false => Right(r.copy(no = withConstraint(Some(r), r.no, c, false)));
         }
     }
   }

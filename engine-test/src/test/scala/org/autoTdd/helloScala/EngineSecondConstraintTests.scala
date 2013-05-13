@@ -12,7 +12,7 @@ class EngineSecondConstraintTests extends FlatSpec with ShouldMatchers with Engi
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A");
     engine.constraint("AB", "Y", because = "B");
-    check(engine, "if a/a if b/ab then y else x  else z")
+    check(engine, "if a/a if b/ab then y#b/ab else x#a/a  else z")
     checkConstraints(engine, "A", "B");
   }
 
@@ -20,7 +20,7 @@ class EngineSecondConstraintTests extends FlatSpec with ShouldMatchers with Engi
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A");
     engine.constraint("B", "Y", because = "B");
-    check(engine, "if a/a then x else if b/b then y else z")
+    check(engine, "if a/a then x#a/a else if b/b then y#b/b else z")
     checkConstraints(engine, "A", "B");
   }
 
@@ -28,14 +28,14 @@ class EngineSecondConstraintTests extends FlatSpec with ShouldMatchers with Engi
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A")
     engine.constraint("AB", "X");
-    check(engine, "if a/a then x else z")
+    check(engine, "if a/a then x#/ab,#a/a else z")
   }
 
   it should "Add assertions to the no if constraint comes to correct value" in {
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A")
     engine.constraint("B", "Z");
-    check(engine, "if a/a then x else z")
+    check(engine, "if a/a then x#a/a else z#/b")
   }
   
   //TODO Consider how to deal with identical result, different because. It's not clear to me what I should do

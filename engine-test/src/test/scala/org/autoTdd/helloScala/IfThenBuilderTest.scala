@@ -56,13 +56,15 @@ class IfThenBuilderTest extends FlatSpec with ShouldMatchers with IfThenParserTe
 
   it should "produce extra constraints" in {
     val a = Constraint1[String, String]("A", "X", "X", Some("A"))
-    val aa = Constraint1[String, String]("A", "X", "X", Some("AA"))
-    val b = Constraint1[String, String]("C", "X", "X", Some("b"))
+    val aBlank = Constraint1[String, String]("A", "X", "X", None)
+    val b = Constraint1[String, String]("C", "X", "X", Some("B"))
 
     val x: Code = "X"
 
-    assertMatches(p("if a then x#aa/a else y"), rightNode("A", List(), Left(x.copy(constraints = List(aa, a))), Left("Y")))
-    assertMatches(p("if a then x#b/c else y"), rightNode("A", List(), Left(x.copy(constraints = List(aa, a))), Left("Y")))
+    assertMatches(p("if a then x#b/c else y"), rightNode("A", List(), Left(x.copy(constraints = List(b))), Left("Y")))
+    assertMatches(p("if a/a then x#a/a else z"), rightNode("A", List("A"), Left(x.copy(constraints = List(a))), Left("Z")))
+    assertMatches(p("if a/a then x#/a else z"), rightNode("A", List("A"), Left(x.copy(constraints = List(aBlank))), Left("Z")))
+    assertMatches(p("if a then x#b/c,#a/a else y"), rightNode("A", List(), Left(x.copy(constraints = List(b, a))), Left("Y")))
   }
 
 }

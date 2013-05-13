@@ -54,10 +54,10 @@ class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait {
 
   "A constraint " should "have a becauseString that is the AST of the because parameter serialized" in {
     val engine: MutableEngine1[Int, String] = Engine1[Int, String](default = "Negative").asInstanceOf[MutableEngine1[Int, String]];
-    engine.constraint(1, "P1", (p: Int) => "P" + p, (x: Int) => x >= 0)
+    engine.constraint(1, "P1", (p: Int) => "P" + p, because = (x: Int) => x >= 0)
     assert(engine.constraints.size == 1)
     val c = engine.constraints.head
-    assert(c.because.becauseString == "((x: Int) => x.>=(0))", c.because.becauseString) //Note I don't know why I have an extra () and a '.' but I'm not complaining 
+    assert(c.becauseString == "((x: Int) => x.>=(0))", c.becauseString) //Note I don't know why I have an extra () and a '.' but I'm not complaining 
   }
 
   it should "ignore constraints if the result is already derived " in {
@@ -67,6 +67,16 @@ class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait {
     assert(engine(1) == "Positive")
     assert(engine(2) == "Positive")
     assert(engine(-1) == "Negative")
+  }
+  "An engine" should "allow constraints to be added one at a time " in {
+    //       makeAndCheck(bigPos, pos, bigNeg, neg);
+    val engine = Engine1[Int, String](default = "Zero");
+    engine.addConstraint(bigPos);
+    engine.addConstraint(pos);
+    engine.addConstraint(bigNeg);
+    engine.addConstraint(neg);
+    engine.addConstraint(vBigPos);
+    engine.addConstraint(vBigNeg);
   }
 
   "An engine " should "apply four constraints, whatever the order, in this smoke test" in {
@@ -86,25 +96,25 @@ class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait {
 
   it should "have a decent to string " in {
     makeAndCheckToString(
-      "if(((x: Int) => x.>(5)))\n" +
+      "if(((x: Int) => x.>(0)))\n" +
         " if(((x: Int) => x.>(50)))\n" +
         "  ((x: Int) => \"VBigPos\")\n" +
         " else\n" +
-        "  ((x: Int) => \"BigPos\")\n" +
+        "  if(((x: Int) => x.>(5)))\n" +
+        "   ((x: Int) => \"BigPos\")\n" +
+        "  else\n" +
+        "   ((x: Int) => \"Pos\")\n" +
         "else\n" +
-        " if(((x: Int) => x.<(-5)))\n" +
-        "  if(((x: Int) => x.<(-50)))\n" +
-        "   ((x: Int) => \"VBigNeg\")\n" +
-        "  else\n" +
-        "   ((x: Int) => \"BigNeg\")\n" +
+        " if(((x: Int) => x.<(-50)))\n" +
+        "  ((x: Int) => \"VBigNeg\")\n" +
         " else\n" +
-        "  if(((x: Int) => x.<(0)))\n" +
-        "   ((x: Int) => \"Neg\")\n" +
+        "  if(((x: Int) => x.<(-5)))\n" +
+        "   ((x: Int) => \"BigNeg\")\n" +
         "  else\n" +
-        "   if(((x: Int) => x.>(0)))\n" +
-        "    ((x: Int) => \"Pos\")\n" +
+        "   if(((x: Int) => x.<(0)))\n" +
+        "    ((x: Int) => \"Neg\")\n" +
         "   else\n" +
-        "    Zero\n", vBigPos, vBigNeg, bigNeg, neg, bigPos, pos);
+        "    Zero\n", pos, vBigPos, vBigNeg, bigNeg, neg, bigPos);
   }
 
   def makeAndCheckToString(expected: String, constraints: Constraint1[Int, String]*) = {

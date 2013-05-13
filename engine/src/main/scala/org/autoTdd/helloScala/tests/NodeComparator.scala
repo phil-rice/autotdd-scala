@@ -41,7 +41,7 @@ trait NodeComparator[R] extends EngineTypes[R] {
 
   def compareConstraints(prefix: String, c1s: List[C], c2s: List[C]): List[String] = {
     val sizeMismatch = c1s.size != c2s.size match { case true => List(prefix + " sizes " + c1s.size + "," + c2s.size); case _ => List() };
-    sizeMismatch ++ (c1s, c2s).zipped.flatMap((c1, c2) => c1 != c2 match { case true => compareConstraint(prefix, c1, c2); case _ => List() });
+    sizeMismatch ++ (c1s, c2s).zipped.flatMap((c1, c2) => c1 != c2 match { case true => compareConstraint(prefix +"["+c1.becauseString +"]", c1, c2); case _ => List() });
   }
 
   def compareConstraint(prefix: String, c1: C, c2: C): List[String] = {
