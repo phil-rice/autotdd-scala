@@ -1,10 +1,7 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
-import org.autoTdd.helloScala.engine._
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
-import org.autoTdd.helloScala.engine.MutableEngine
-import org.autoTdd.helloScala.engine.Constraint1
 
 class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait {
 

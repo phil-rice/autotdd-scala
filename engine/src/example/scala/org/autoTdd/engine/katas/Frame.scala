@@ -1,6 +1,6 @@
 
 
-package org.autoTdd.helloScala.katas
+package org.autoTdd.engine.katas
 
 sealed abstract class Frame(val first: Int, val second: Int, val third: Int = 0, val size: Int = 2) {
   def score = first + second + third;

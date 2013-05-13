@@ -1,11 +1,8 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
-import org.autoTdd.helloScala.engine.ConstraintConflictException
-import org.autoTdd.helloScala.engine.Engine1
-import org.autoTdd.helloScala.engine.EngineTest
-import org.autoTdd.helloScala.engine.EngineTest
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
+import org.autoTdd.engine.tests.EngineTest
 
 class EngineConstructionWhenTestingTest extends FlatSpec with ShouldMatchers with IfThenParserTestTrait {
 

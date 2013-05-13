@@ -1,11 +1,9 @@
-package org.autoTdd.helloScala.katas
+package org.autoTdd.engine.katas
 
-import org.autoTdd.helloScala.engine.MutableEngine
+
 import org.junit.runner.RunWith
-import org.autoTdd.helloScala.engine.AutoTddRunner
-import org.autoTdd.helloScala.engine.MutableEngine
-import org.autoTdd.helloScala.engine.Engine2
-import org.autoTdd.helloScala.engine.MutableEngine
+import org.autoTdd.engine.tests.AutoTddRunner
+import org.autoTdd.engine.Engine2
 
 class Hello3 {
 

@@ -1,10 +1,7 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
-import org.autoTdd.helloScala.tests.IfThenParser
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
-import org.autoTdd.helloScala.tests.NodeComparator
-import org.autoTdd.helloScala.engine.Engine1Types
 
 class NodeComparatorTest extends FlatSpec with ShouldMatchers with IfThenParserTestTrait {
 

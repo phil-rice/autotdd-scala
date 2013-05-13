@@ -1,10 +1,11 @@
-package org.autoTdd.helloScala.engine
+package org.autoTdd.engine
 
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import org.autotdd.constraints.Constraint
 import org.autotdd.constraints.CodeFn
 import org.autotdd.constraints.Because
+import org.autoTdd.engine.tests.EngineTest
 
 class ConstraintBecauseException(msg: String) extends RuntimeException(msg)
 class ConstraintResultException(msg: String) extends RuntimeException(msg)

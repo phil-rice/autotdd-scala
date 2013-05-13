@@ -1,13 +1,8 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
-import org.autoTdd.helloScala.engine.Engine2
-import org.autoTdd.helloScala.engine.Engine2
-import org.autoTdd.helloScala.katas.Frame
-import org.autoTdd.helloScala.katas.NormalFrame
-import org.autoTdd.helloScala.katas.SpareFrame
-import org.autoTdd.helloScala.katas.StrikeFrame
+import org.autoTdd.engine.katas._
 
 class EngineConstructionSmokeTest extends FlatSpec with ShouldMatchers with PosNegTestTrait {
 

@@ -1,10 +1,7 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
-import org.autoTdd.helloScala.engine.Engine1
-import org.autoTdd.helloScala.engine.AssertionException
-import org.autoTdd.helloScala.engine.ConstraintConflictException
 
 class EngineSecondConstraintTests extends FlatSpec with ShouldMatchers with EngineTests {
 

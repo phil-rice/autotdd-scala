@@ -1,4 +1,4 @@
-package org.autoTdd.helloScala.engine
+package org.autoTdd.engine
 
 import scala.language.experimental.macros
 import scala.reflect.macros.Context

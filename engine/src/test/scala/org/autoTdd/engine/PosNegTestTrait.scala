@@ -1,6 +1,5 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
-import org.autoTdd.helloScala.engine.Constraint1
 
 trait PosNegTestTrait {
   val pos = Constraint1[Int, String](1, "Pos", code = (x: Int) => "Pos", because = Some((x: Int) => x > 0))

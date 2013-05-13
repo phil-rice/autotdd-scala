@@ -1,17 +1,12 @@
-package org.autoTdd.helloScala.engine
+package org.autoTdd.engine.tests
 
 import org.junit.runner.Description
 import scala.collection.JavaConversions._
 import org.junit.runner.Runner
 import org.junit.runner.notification.RunNotifier
-import org.autoTdd.helloScala.engine._
-import java.util.Arrays
-import java.lang.reflect.Modifier
+import org.autoTdd.engine._
 import scala.reflect.runtime.{ universe => ru }
-import scala.reflect.ClassTag
-import reflect.runtime.universe._
 import java.lang.reflect.Method
-import org.junit.runner.Result
 import junit.framework.Assert
 import org.junit.runner.notification.Failure
 import org.autotdd.constraints.Constraint

@@ -1,16 +1,9 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
+
+import scala.runtime.ZippedTraversable2.zippedTraversable2ToTraversable
 
 import org.scalatest.FlatSpec
-
 import org.scalatest.matchers.ShouldMatchers
-import org.autoTdd.helloScala.engine.MutableEngine
-import org.autoTdd.helloScala.engine.Engine1
-import org.autoTdd.helloScala.tests.NodeComparator
-import org.autoTdd.helloScala.tests.IfThenParser
-import org.autotdd.constraints.CodeFn
-import org.autotdd.constraints.Because
-import org.autoTdd.helloScala.engine.Node
-import org.autoTdd.helloScala.engine._
 
 trait EngineTests extends IfThenParserTestTrait {
 

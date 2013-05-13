@@ -1,10 +1,15 @@
-package org.autoTdd.helloScala.tests
+package org.autoTdd.engine.tests
 
 import scala.util.parsing.combinator.JavaTokenParsers
-import org.autoTdd.helloScala.engine._
 import scala.util.parsing.combinator._
 import org.autotdd.constraints.CodeFn
 import org.autotdd.constraints.Because
+import org.autoTdd.engine.Constraint2
+import org.autoTdd.engine.Engine1Types
+import org.autoTdd.engine.EngineTypes
+import org.autoTdd.engine.Engine2Types
+import org.autoTdd.engine.Constraint1
+import org.autoTdd.engine.Node
 
 object IfThenParser {
 

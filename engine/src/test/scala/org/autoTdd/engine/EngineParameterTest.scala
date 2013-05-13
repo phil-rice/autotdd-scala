@@ -1,7 +1,5 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
-import org.autoTdd.helloScala.engine.Constraint1
-import org.autoTdd.helloScala.engine.Engine1
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 

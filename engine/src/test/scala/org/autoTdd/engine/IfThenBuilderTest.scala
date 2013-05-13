@@ -1,18 +1,13 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
 import scala.util.Either
 import scala.util.Left
-import org.autoTdd.helloScala.tests.IfThenParser
 import org.autotdd.constraints.CodeFn
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import org.autotdd.constraints.Because
-import scala.util.Left
-import org.autoTdd.helloScala.engine.Engine1Types
-import org.autoTdd.helloScala.engine.Node
-import org.autoTdd.helloScala.tests.NodeComparator
-import org.autoTdd.helloScala.engine.Constraint1
-import org.autoTdd.helloScala.engine.Constraint1
+import org.autoTdd.engine.tests.NodeComparator
+import org.autoTdd.engine.tests.IfThenParser
 
 trait IfThenParserTestTrait extends Engine1Types[String, String] with ShouldMatchers {
 

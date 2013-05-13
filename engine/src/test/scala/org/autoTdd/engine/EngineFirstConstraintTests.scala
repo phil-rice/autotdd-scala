@@ -1,11 +1,8 @@
-package org.autoTdd.helloScala
+package org.autoTdd.engine
 
 import org.scalatest.FlatSpec
+
 import org.scalatest.matchers.ShouldMatchers
-import org.autoTdd.helloScala.engine.Engine1
-import org.autoTdd.helloScala.engine.AssertionException
-import org.autoTdd.helloScala.engine.Constraint1
-import org.autotdd.constraints.CodeFn
 
 class EngineFirstConstraintTests extends FlatSpec with ShouldMatchers with EngineTests {
   "An empty engine" should "change from root to if then with one constraint" in {
