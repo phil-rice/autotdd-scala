@@ -6,7 +6,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.autoTdd.helloScala.engine.MutableEngine
 import org.autoTdd.helloScala.engine.Constraint1
 
-class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait{
+class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait {
 
   "An empty Engine" should "return the default value" in {
     val engine_1 = Engine1[Int, Int](default = 1);
@@ -60,19 +60,14 @@ class Engine1Test extends FlatSpec with ShouldMatchers with PosNegTestTrait{
     assert(c.because.becauseString == "((x: Int) => x.>=(0))", c.because.becauseString) //Note I don't know why I have an extra () and a '.' but I'm not complaining 
   }
 
-  //TODO Not sure what to do about this. Ideally I would only do this if the because was identical, but it's hard to do identical functions
-  //this crap behaviour is a place holder until I decide what to do about it
-  //idea: ORs would be suitable so I could idea the idea of an OR constraint
   it should "ignore constraints if the result is already derived " in {
     val engine = Engine1[Int, String](default = "Negative");
     engine.constraint(1, "Positive", because = (x: Int) => x >= 0);
-    engine.constraint(2, "Positive", because = (x: Int) => x >= 0);
+    engine.constraint(2, "Positive");
     assert(engine(1) == "Positive")
     assert(engine(2) == "Positive")
     assert(engine(-1) == "Negative")
   }
-
- 
 
   "An engine " should "apply four constraints, whatever the order, in this smoke test" in {
     makeAndCheck(pos, bigPos, neg, bigNeg);

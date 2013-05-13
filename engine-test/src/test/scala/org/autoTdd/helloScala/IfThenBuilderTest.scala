@@ -17,10 +17,10 @@ import org.autoTdd.helloScala.engine.Constraint1
 trait IfThenParserTestTrait extends Engine1Types[String, String] with ShouldMatchers {
 
   implicit def string_to_because(s: String) = new Because[B]((x) => x contains s, s.toString())
-  implicit def string_to_result(s: String) = new CodeFn[RFn,C]((x) => s, s.toString())
-  implicit def string_to_constraint(s: String) = new Constraint1[String, String](s, s, s, s)
+  implicit def string_to_result(s: String) = new CodeFn[RFn, C]((x) => s, s.toString())
+  implicit def string_to_constraint(s: String) = new Constraint1[String, String](s, s, s, Some(s))
 
-  def node(b: B, inputs: List[Any], yes: RorN, no: RorN) = new Node(b, inputs,  yes, no);
+  def node(b: B, inputs: List[Any], yes: RorN, no: RorN) = new Node(b, inputs, yes, no);
   def rightNode(b: Because[B], inputs: List[Any], yes: RorN, no: RorN) = Right(new Node(b, inputs, yes, no));
 
   val p = IfThenParser.parser1[String, String](
@@ -54,9 +54,15 @@ class IfThenBuilderTest extends FlatSpec with ShouldMatchers with IfThenParserTe
     assertMatches(p("if a/a,b if b then w else x else y"), rightNode("A", List("A", "B"), rightNode("B", List(), Left("W"), Left("X")), Left("Y")))
   }
 
-//  it should "produce extra constraints" in {
-//    val aa = Constraint1[String, String]("A", "X", "X", "AA")
-//    assertMatches(p("if a/a,b#aa/aa->x if b then w else x else y"), rightNode("A", List("A", "B"), List(aa), rightNode("B", List(), Left("W"), Left("X")), Left("Y")))
-//  }
+  it should "produce extra constraints" in {
+    val a = Constraint1[String, String]("A", "X", "X", Some("A"))
+    val aa = Constraint1[String, String]("A", "X", "X", Some("AA"))
+    val b = Constraint1[String, String]("C", "X", "X", Some("b"))
+
+    val x: Code = "X"
+
+    assertMatches(p("if a then x#aa/a else y"), rightNode("A", List(), Left(x.copy(constraints = List(aa, a))), Left("Y")))
+    assertMatches(p("if a then x#b/c else y"), rightNode("A", List(), Left(x.copy(constraints = List(aa, a))), Left("Y")))
+  }
 
 }

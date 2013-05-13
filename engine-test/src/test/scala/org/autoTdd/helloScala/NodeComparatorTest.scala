@@ -59,19 +59,19 @@ class NodeComparatorTest extends FlatSpec with ShouldMatchers with IfThenParserT
   }
 
   it should "report errors if constraint size mismatch " in {
-    val x1 = p("if a/a#aa/aa->x if b then w else x else y")
+    val x1 = p("if a/a if b then w#a/ab else x else y")
     val x2 = p("if a/a if b then w else x else y")
-    check(x1, x2, List("constraints/ sizes 1,0"))
+    check(x1, x2, List("yes/yes/constraints/ sizes 1,0"))
   }
-  it should "report errors if constraint because value mismatch " in {
-    val x1 = p("if a/a#aa/aa->x if b then w else x else y")
-    val x2 = p("if a/a#b/b->x if b then w else x else y")
-    check(x1, x2, List("constraints/because AA, B"))
+  it should "report errors if constraint inputs mismatch " in {
+    val x1 = p("if a/a if b then w#b/aa else x else y")
+    val x2 = p("if a/a if b then w#b/b else x else y")
+    check(x1, x2, List("yes/yes/constraints/params List(AA), List(B)"))
   }
-  it should "report errors if constraint result value mismatch " in {
-    val x1 = p("if a/a#aa/aa->x if b then w else x else y")
-    val x2 = p("if a/a#aa/aa->y if b then w else x else y")
-    check(x1, x2, List("constraints/expected X, Y", "constraints/code X, Y"))
+  it should "report errors if constraint because  mismatch " in {
+    val x1 = p("if a/a if b then w#aa/b else x else y")
+    val x2 = p("if a/a if b then w#b/b else x else y")
+    check(x1, x2, List("yes/yes/constraints/because AA, B"))
   }
 
   def check(x1: RorN, x2: RorN, expected: List[String]) {

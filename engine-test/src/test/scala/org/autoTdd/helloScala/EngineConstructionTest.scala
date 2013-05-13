@@ -22,7 +22,7 @@ trait EngineTests extends IfThenParserTestTrait {
   def checkConstraints(engine: Engine1[String, String], expected: String*) {
     assert(engine.constraints.size == expected.size)
     for ((c, a) <- (engine.constraints, expected).zipped) {
-      assert(c.because.becauseString == a, "Expected: " + a + " Actual " + c + "\n   Constraints: " + engine.constraints)
+      assert(c.becauseString == a, "Expected: [" + a + "] BecauseString = [" + c.becauseString + "] Actual " + c + "\n   Constraints: " + engine.constraints)
     }
   }
 }
@@ -45,7 +45,6 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with EngineTes
     checkConstraints(engine, "A", "B");
   }
 
-  
   it should "keep the order of constraints" in {
     val engine = Engine1[String, String](default = "Z");
     engine.constraint("A", "X", because = "A");
@@ -73,7 +72,7 @@ class EngineConstructionTest extends FlatSpec with ShouldMatchers with EngineTes
     engine.constraint("AA", "X")
     val aAsConstraint = engine.constraints(0)
     val aaAsConstraint = engine.constraints(1)
-    val expected: RorN = Right(Node[B, RFn, String, C](aAsConstraint.because, aAsConstraint.params, Left("X"), Left("Z")))
+    val expected: RorN = Right(Node[B, RFn, String, C](aAsConstraint.because.get, aAsConstraint.params, Left("X"), Left("Z")))
     assertMatches(engine.root, expected)
   }
 

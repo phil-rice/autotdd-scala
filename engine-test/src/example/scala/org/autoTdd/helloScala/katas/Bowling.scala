@@ -15,11 +15,11 @@ object Hello2 {
 
   val mad = Engine2[Int, Int, Int](0)
   mad.constraint(1, 2, expected = 3, (a: Int, b: Int) => a + b, because = (a: Int, b: Int) => true)
-  mad.constraint(2, 2, 0)
   mad.constraint(6, 6, expected = 0, because = (a: Int, b: Int) => a == b)
+  mad.constraint(2, 2, 0)
 
   
-  //get returns the ith ball or zero  
+  //get returns the ith ball or zero   
   val get = Engine2[List[Int], Int, Int](0);
 
   get constraint (List(7, 10, 4, 3), 0,

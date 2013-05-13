@@ -50,7 +50,7 @@ class AutoTddRunner(val clazz: Class[Any]) extends Runner {
     println(engine)
     engineMap = engineMap + (engineDescription -> engine)
     for (c <- engine.constraints) {
-      val name = c.params.reduce((acc, p) => acc + ", " + p) + " => " + c.expected + " " + c.because.becauseString
+      val name = c.params.reduce((acc, p) => acc + ", " + p) + " => " + c.expected + " "+ c.becauseString
       val cleanedName = name.replace("(", "<").replace(")", ">");
 //      println("   " + cleanedName)
       val constraintDescription = Description.createSuiteDescription(cleanedName)

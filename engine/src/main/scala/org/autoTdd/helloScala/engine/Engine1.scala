@@ -6,8 +6,8 @@ import org.autotdd.constraints.Constraint
 import org.autotdd.constraints.CodeFn
 import org.autotdd.constraints.Because
 
-case class Constraint1[P, R](val param: P, override val expected: R, override val code: CodeFn[(P) => R, Constraint1[P,R]], override val because: Because[(P) => Boolean])
-  extends Constraint[(P) => Boolean, (P) => R, R, Constraint1[P,R]](expected, code, because) {
+case class Constraint1[P, R](val param: P, override val expected: R, override val code: CodeFn[(P) => R, Constraint1[P, R]], override val because: Option[Because[(P) => Boolean]])
+  extends Constraint[(P) => Boolean, (P) => R, R, Constraint1[P, R]](expected, code, because) {
   override def params = List(param)
 
   def actualValueFromParameters = code.rfn(param)
@@ -34,19 +34,20 @@ trait Engine1[P, R] extends Engine[R] with Function1[P, R] with EngineToString[R
 
   def apply(p: P): R = evaluate(b => b(p), root)(p)
 
-  def assertion(p: P, expected: R): CR = constraint(p, expected)
+  def assertion(p: P, expected: R): CR = constraint(p, expected, null, null)
 
-  def constraint(p: P, expected: R, code: Code = null, because: Because[B] = Because[(P => Boolean)]((P)=>true, "true")): CR = {
+  def constraint(p: P, expected: R, code: Code = null, because: Because[B] = null): CR = {
+    val b = because match { case null => None; case x => Some(x) }
     if (code == null)
-      addConstraint(realConstraint(Constraint1(p, expected, CodeFn[RFn,C]((p: P) => expected, expected.toString), because)))
+      addConstraint(realConstraint(Constraint1(p, expected, CodeFn[RFn, C]((p: P) => expected, expected.toString), b)))
     else
-      addConstraint(realConstraint(Constraint1(p, expected, code, because)))
+      addConstraint(realConstraint(Constraint1(p, expected, code, b)))
   }
 
   def makeClosureForBecause(params: List[Any]) = (b) => b(params(0).asInstanceOf[P])
   def makeClosureForResult(params: List[Any]) = (r) => r(params(0).asInstanceOf[P])
 
-  def makeDefaultRoot(defaultRoot: R): RorN = Left(CodeFn[RFn,C]((p: P) => defaultRoot, defaultRoot.toString))
+  def makeDefaultRoot(defaultRoot: R): RorN = Left(CodeFn[RFn, C]((p: P) => defaultRoot, defaultRoot.toString))
 }
 
 class ImmutableEngine1[P, R](val constraints: List[Constraint1[P, R]]) extends Engine1[P, R] {

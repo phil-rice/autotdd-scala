@@ -60,22 +60,23 @@ trait BuildEngine[R] extends EvaluateEngine[R] {
     val fnr = makeClosureForResult(c.params)
     n match {
       case Left(l) =>
-        c.hasDefaultBecause match {
-          case true =>
-            val actualResultIfUseThisNodesCode = fnr(l.rfn);
-            if (actualResultIfUseThisNodesCode != c.expected)
-              throw new AssertionException("Actual Result: " + actualResultIfUseThisNodesCode + "\nExpected: " + c.expected);
-            Left(l.copy(constraints = c :: l.constraints))
-          case false =>
+        c.because match {
+          case Some(b) =>
             parent match {
               case Some(p) =>
-                val wouldBreakExisting = makeClosureForBecause(p.inputs)(c.because.because)
+                val wouldBreakExisting = makeClosureForBecause(p.inputs)(b.because)
                 if (wouldBreakExisting)
                   throw new ConstraintConflictException("Cannot differentiate between\nExisting: " + p + "\nConstraint: " + c)
               case _ =>
             }
-            Right(Node(c.because, c.params, Left(c.code.copy(constraints = c :: c.code.constraints)), Left(l)))
+            Right(Node(b, c.params, Left(c.code.copy(constraints = c :: c.code.constraints)), Left(l)))
+          case None =>
+            val actualResultIfUseThisNodesCode = fnr(l.rfn);
+            if (actualResultIfUseThisNodesCode != c.expected)
+              throw new AssertionException("Actual Result: " + actualResultIfUseThisNodesCode + "\nExpected: " + c.expected);
+            Left(l.copy(constraints = c :: l.constraints))
         }
+
       case Right(r) =>
         makeClosureForBecause(c.params)(r.because.because) match {
           case true => Right(r.copy(yes = withConstraint(Some(r), r.yes, c)));
@@ -83,24 +84,34 @@ trait BuildEngine[R] extends EvaluateEngine[R] {
         }
     }
   }
-
-  //  private def dealWithNoMoreYes(leaf: N, c: C): RorN = {
-  //    makeClosureForBecause(leaf.inputs)(c.because.because) match {
-  //      case true => addConstraintToLeaf(leaf, c) //ok we have problem so wimping out
-  //      case false => Right(leaf.copy(yes = withConstraint(leaf.yes, c)));
+  //  private def oldwithConstraint(parent: Option[N], n: RorN, c: C): RorN = {
+  //    val fn = makeClosureForBecause(c.params)
+  //    val fnr = makeClosureForResult(c.params)
+  //    n match {
+  //      case Left(l) =>
+  //        c.hasDefaultBecause match {
+  //          case true =>
+  //            val actualResultIfUseThisNodesCode = fnr(l.rfn);
+  //            if (actualResultIfUseThisNodesCode != c.expected)
+  //              throw new AssertionException("Actual Result: " + actualResultIfUseThisNodesCode + "\nExpected: " + c.expected);
+  //            Left(l.copy(constraints = c :: l.constraints))
+  //          case false =>
+  //            parent match {
+  //              case Some(p) =>
+  //                val wouldBreakExisting = makeClosureForBecause(p.inputs)(c.because.because)
+  //                if (wouldBreakExisting)
+  //                  throw new ConstraintConflictException("Cannot differentiate between\nExisting: " + p + "\nConstraint: " + c)
+  //              case _ =>
+  //            }
+  //            Right(Node(c.because, c.params, Left(c.code.copy(constraints = c :: c.code.constraints)), Left(l)))
+  //        }
+  //      case Right(r) =>
+  //        makeClosureForBecause(c.params)(r.because.because) match {
+  //          case true => Right(r.copy(yes = withConstraint(Some(r), r.yes, c)));
+  //          case false => Right(r.copy(no = withConstraint(Some(r), r.no, c)));
+  //        }
   //    }
   //  }
-  //  private def addConstraintToLeaf(leaf: N, c: C): RorN = {
-  //    if (leaf.yes.isRight)
-  //      throw new IllegalStateException;
-  //    if (!c.hasDefaultBecause)
-  //      if (leaf.because.becauseString != c.because.becauseString)
-  //        throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
-  //    if (leaf.yes.left.get.description != c.code.description)
-  //      throw new ConstraintConflictException("Cannot differentiate between \nExisting:\n" + leaf + "\nand new constraint:\n" + c)
-  //    return Right(leaf.copy(yes = leaf.yes.right.get.copy(constraints = c :: leaf.extraConstraints))
-  //  }
-
   private def findLastMatch(fn: BecauseClosure, root: OptN, lastMatch: OptN, params: List[Any]): OptN = {
     root match {
       case None => None
@@ -131,8 +142,12 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
   def realConstraint(c: C): C = c
 
   private def validateConstraint(c: C) {
-    if (!makeClosureForBecause(c.params).apply(c.because.because))
-      throw new ConstraintBecauseException(c.because.becauseString + " is not true for " + c.params);
+    c.because match {
+      case Some(b) =>
+        if (!makeClosureForBecause(c.params).apply(b.because))
+          throw new ConstraintBecauseException(c.becauseString + " is not true for " + c.params);
+      case None =>
+    }
     val actualFromConstraint = c.actualValueFromParameters
     if (actualFromConstraint != c.expected)
       throw new ConstraintResultException("Wrong result for " + c.code.description + " for " + c.params + "\nActual: " + actualFromConstraint + "\nExpected: " + c.expected);
