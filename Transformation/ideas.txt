@@ -1,0 +1,55 @@
+So we want to transform things to other things.
+
+Examples
+
+XML to Domain
+JSon to Domain
+Json to Json
+Domain to Domain
+
+
+So I need to deal with tree structures.
+
+Start at the top and iterate down. As I go I have a side effect: building something up
+
+
+recursive descent parser might be a simple approach, although the Parser Monad is actually awesome.
+
+
+library : [
+   book : {name : 'Harry Potter: Philospher's stone',
+           price : 4.50
+           currency: 'GBP'}
+]
+
+var jsonToLibrary = ..
+
+val book1Json
+
+constraint ('library'
+   
+
+
+
+Sometimes the structure is constrained.
+
+
+How do I make this clear...
+I have a context which is the whole tree so far
+I have the bit which is me, and I need to specify where that is 
+
+
+
+
+
+
+Use cases
+I want to iterate through some Json data, and import each item as a domain object
+I want to  iterate through Json, cleanse (eliminate duff items, remove duplicates for some value of duplicate, and add fields) 
+
+Questions
+* Do we want to do transformation or mirrors
+** For example data binding: as one changes, we want consequential changes to ripple through. This is important for fat clients
+For new we will do 'I shot'
+
+Issues
