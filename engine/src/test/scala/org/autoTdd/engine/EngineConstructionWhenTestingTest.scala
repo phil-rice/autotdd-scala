@@ -16,6 +16,18 @@ class EngineConstructionWhenTestingTest extends FlatSpec with ShouldMatchers wit
     assert(1 == EngineTest.exceptions.size)
     assert(EngineTest.exceptions(ab_a).isInstanceOf[ConstraintConflictException]);
   }
+  
+  "An Engine" should "Remember constraint and exception when failing a validation " in {
+	  val engine = Engine1[String, String](default = "Z");
+	  EngineTest.test(() => {
+		  engine.constraint("AB", "X", because = "Z");
+	  })
+	  val ab_a = engine.constraints(1)
+	  assert(1 == EngineTest.exceptions.size)
+	  assert(EngineTest.exceptions(ab_a).isInstanceOf[ConstraintConflictException]);
+  }
+  
+  
 //  "An Engine" should "Throw an exception when accessed if it failed to build properly" in {
 //    val engine = Engine1[String, String](default = "Z");
 //    EngineTest.test(() => {

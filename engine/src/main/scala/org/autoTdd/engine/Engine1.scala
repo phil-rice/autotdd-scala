@@ -14,8 +14,9 @@ case class Constraint1[P, R](val param: P, override val expected: R, override va
 }
 
 object Engine1 {
-  def apply[P, R](default: R = null) = new MutableEngine1[P, R](default)
-  def mutable[P, R](default: R = null) = new MutableEngine1[P, R](default)
+  def apply[P, R](default: R) = new MutableEngine1[P, R](CodeFn((p: P) => default, default.toString))
+  def apply[P, R](default: CodeFn[(P) => R, Constraint1[P,R]]) = new MutableEngine1[P, R](default)
+  def mutable[P, R](default: (P) => R) = new MutableEngine1[P, R](default)
   def immutable[P, R](default: R = null) = new ImmutableEngine1[P, R](List())
 
   def blankTrue[P, R](r: R): (P) => Boolean = (p) => true;
@@ -44,6 +45,7 @@ trait Engine1[P, R] extends Engine[R] with Function1[P, R] with EngineToString[R
       addConstraint(realConstraint(Constraint1(p, expected, code, b)))
   }
 
+  def justBecause = (p: P) => true
   def makeClosureForBecause(params: List[Any]) = (b) => b(params(0).asInstanceOf[P])
   def makeClosureForResult(params: List[Any]) = (r) => r(params(0).asInstanceOf[P])
 
@@ -56,4 +58,6 @@ class ImmutableEngine1[P, R](val constraints: List[Constraint1[P, R]]) extends E
   def addConstraint(c: Constraint1[P, R]) = this
 }
 
-class MutableEngine1[P, Result](val defaultValue: Result) extends MutableEngine[Result](defaultValue) with Engine1[P, Result] 
+class MutableEngine1[P, R](val defaultRoot: CodeFn[(P) => R, Constraint1[P, R]]) extends MutableEngine[R] with Engine1[P, R] {
+  var root: RorN = Left(defaultRoot)
+} 

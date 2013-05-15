@@ -86,34 +86,7 @@ trait BuildEngine[R] extends EvaluateEngine[R] {
         }
     }
   }
-  //  private def oldwithConstraint(parent: Option[N], n: RorN, c: C): RorN = {
-  //    val fn = makeClosureForBecause(c.params)
-  //    val fnr = makeClosureForResult(c.params)
-  //    n match {
-  //      case Left(l) =>
-  //        c.hasDefaultBecause match {
-  //          case true =>
-  //            val actualResultIfUseThisNodesCode = fnr(l.rfn);
-  //            if (actualResultIfUseThisNodesCode != c.expected)
-  //              throw new AssertionException("Actual Result: " + actualResultIfUseThisNodesCode + "\nExpected: " + c.expected);
-  //            Left(l.copy(constraints = c :: l.constraints))
-  //          case false =>
-  //            parent match {
-  //              case Some(p) =>
-  //                val wouldBreakExisting = makeClosureForBecause(p.inputs)(c.because.because)
-  //                if (wouldBreakExisting)
-  //                  throw new ConstraintConflictException("Cannot differentiate between\nExisting: " + p + "\nConstraint: " + c)
-  //              case _ =>
-  //            }
-  //            Right(Node(c.because, c.params, Left(c.code.copy(constraints = c :: c.code.constraints)), Left(l)))
-  //        }
-  //      case Right(r) =>
-  //        makeClosureForBecause(c.params)(r.because.because) match {
-  //          case true => Right(r.copy(yes = withConstraint(Some(r), r.yes, c)));
-  //          case false => Right(r.copy(no = withConstraint(Some(r), r.no, c)));
-  //        }
-  //    }
-  //  }
+
   private def findLastMatch(fn: BecauseClosure, root: OptN, lastMatch: OptN, params: List[Any]): OptN = {
     root match {
       case None => None
@@ -132,7 +105,11 @@ trait BuildEngine[R] extends EvaluateEngine[R] {
   }
 }
 
-trait AddConstraints[R] extends EngineTypes[R] {
+trait EngineTypesWithRoot[R] extends EngineTypes[R] {
+  def root: RorN
+}
+
+trait AddConstraints[R] extends EngineTypesWithRoot[R] {
   type CR
   def addConstraint(c: C): CR
 }
@@ -140,7 +117,6 @@ trait AddConstraints[R] extends EngineTypes[R] {
 trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngine[R] {
   def root: RorN
   def constraints: List[C]
-  def makeDefaultRoot(defaultRoot: R): RorN
   def realConstraint(c: C): C = c
 
   private def validateConstraint(c: C) {
@@ -164,10 +140,10 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
 
   def addConstraintWithChecking(c: C, addingClosure: (C) => CR, default: CR): CR = {
     try {
-      validateConstraint(c)
       val result = addingClosure(c)
+      validateConstraint(c)
       if (!EngineTest.testing)
-        checkConstraint(c)
+        checkConstraint(c) //check later
       result
     } catch {
       case e: Throwable if EngineTest.testing =>
@@ -183,8 +159,8 @@ trait Engine[R] extends BuildEngine[R] with AddConstraints[R] with EvaluateEngin
 
 }
 
-trait EngineToString[R] extends EngineTypes[R] {
-  def root: RorN
+trait EngineToString[R] extends EngineTypesWithRoot[R] {
+
   def toString(indent: String, root: RorN): String = {
     root match {
       case Left(result) => indent + result.description + "\n"
@@ -214,17 +190,18 @@ trait ImmutableEngine[R] extends Engine[R] {
   }
 }
 
-abstract class MutableEngine[R](val defaultResult: R) extends Engine[R] {
+abstract class MutableEngine[R]() extends Engine[R] {
   type CR = R
-  var root: RorN = makeDefaultRoot(defaultResult)
   var constraints = List[C]()
-
+  val defaultRoot: Code
+  var root: RorN
+  
   def addConstraint(c: C): CR = {
     addConstraintWithChecking(c, (c) => {
       val l = c :: constraints.reverse
       val newConstraints = l.reverse
       constraints = newConstraints
-      root = buildFromConstraints(makeDefaultRoot(defaultResult), constraints);
+      root = buildFromConstraints(Left(defaultRoot), constraints);
       c.expected
     }, c.expected);
   }

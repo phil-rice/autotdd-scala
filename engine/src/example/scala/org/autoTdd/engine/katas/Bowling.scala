@@ -30,18 +30,11 @@ object Hello2 {
   get constraint (List(7, 10, 4, 3), 4, 0)
   get constraint (List(7, 10, 4, 3), 5, 0)
 
-  val makeFrame = Engine2[List[Int], Int, Frame]()
+  val makeFrame = Engine2[List[Int], Int, Frame]((rolls: List[Int], i: Int) => NormalFrame(get(rolls, i), get(rolls, i + 1)))
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0,
-    expected = NormalFrame(7, 2),
-    code = (rolls: List[Int], i: Int) => NormalFrame(get(rolls, i), get(rolls, i + 1)),
-    because = (rolls: List[Int], i: Int) => true)
+    expected = NormalFrame(7, 2))
 
-  makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 0,
-    NormalFrame(7, 2),
-    (rolls: List[Int], i: Int) => {
-      NormalFrame(get(rolls, i), get(rolls, i + 1))
-    })
 
   makeFrame.constraint(List(7, 2, 5, 5, 3, 0, 10, 2, 4), 6, StrikeFrame(10, 2, 4),
     (rolls: List[Int], i: Int) => StrikeFrame(rolls(i), get(rolls, i + 1), get(rolls, i + 2)),
